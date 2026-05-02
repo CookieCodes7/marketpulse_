@@ -360,10 +360,10 @@ export default function Terminal() {
       >
 
         {/* LEFT: Watchlist */}
-        <div className="mp-left">
+        <div className="mp-left" style={{ zoom: Math.max(1, Math.min(1.6, leftWidth / 180)) }}>
           <div className="panel-hdr">
             {market.flag} Watchlist
-            <span style={{ fontSize: 8, color: 'var(--muted)' }}>{stocks.length} stocks</span>
+            <span style={{ color: 'var(--muted)' }}>{stocks.length} stocks</span>
           </div>
           {stocks.map((s, i) => {
             const q = liveQuotes[`${activeMarket}:${s.sym}`];
@@ -550,7 +550,7 @@ export default function Terminal() {
         <div className="mp-resize-handle" onMouseDown={onResizeMouseDown('right')} title="Drag to resize news feed" />
 
         {/* RIGHT: News */}
-        <div className="mp-right">
+        <div className="mp-right" style={{ zoom: Math.max(1, Math.min(1.6, rightWidth / 220)) }}>
           <div className="panel-hdr">{market.flag} {market.name} News Feed</div>
           {market.news.map((n, i) => (
             <div key={i} className="news-item">
