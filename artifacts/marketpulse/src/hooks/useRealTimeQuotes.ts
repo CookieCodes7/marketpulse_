@@ -35,7 +35,7 @@ export const DEFAULT_YAHOO_SYMBOLS: Record<string, Record<string, string>> = {
   },
   CMDTY: {
     GOLD:'GC=F', SILVER:'SI=F', OIL_WTI:'CL=F', OIL_BRENT:'BZ=F',
-    NAT_GAS:'NG=F', COPPER:'HG=F', WHEAT:'ZW=F', CORN:'ZC=F',
+    NAT_GAS:'NG=F', COPPER:'HG=F',
   },
 };
 

@@ -346,12 +346,12 @@ export const WAR_EVENTS: WarEvent[] = [
     flag: '🇷🇺🇺🇦',
     severity: 'HIGH',
     assets: [
-      { sym: 'WHEAT', dir: 1, pct: '+18.4%' },
       { sym: 'NAT GAS', dir: 1, pct: '+22.1%' },
       { sym: 'OIL BRENT', dir: 1, pct: '+11.3%' },
       { sym: 'GOLD', dir: 1, pct: '+8.7%' },
+      { sym: 'EUR/USD', dir: -1, pct: '-2.4%' },
     ],
-    summary: 'Black Sea grain corridor disruptions drive wheat premium. European gas supply risk keeps energy elevated. Safe-haven flows sustain gold at multi-year highs.',
+    summary: 'European energy supply risk keeps gas and oil elevated. Safe-haven flows sustain gold at multi-year highs. EUR under structural pressure from prolonged conflict.',
     updated: '2h ago',
   },
   {

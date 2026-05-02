@@ -15,7 +15,7 @@ interface CommodityItem {
   yahoo: string;
   name: string;
   unit: string;
-  category: 'Metals' | 'Energy' | 'Agriculture';
+  category: 'Metals' | 'Energy';
   emoji: string;
   sig: 'BULL' | 'BEAR' | 'NEUT';
   conf: number;
@@ -32,15 +32,9 @@ const COMMODITIES: CommodityItem[] = [
   { sym:'OIL_BRENT',   yahoo:'BZ=F',  name:'Brent Crude',   unit:'$/bbl',    category:'Energy',      emoji:'🛢️', sig:'NEUT', conf:52, aiNote:'Middle East risk premium fading as ceasefire talks progress. Global demand remains mixed with diverging regional trends.' },
   { sym:'NAT_GAS',     yahoo:'NG=F',  name:'Natural Gas',   unit:'$/MMBtu',  category:'Energy',      emoji:'🔥', sig:'NEUT', conf:48, aiNote:'Mild weather suppresses near-term demand. LNG export infrastructure additions in 2025 create structural medium-term support.' },
   { sym:'GASOLINE',    yahoo:'RB=F',  name:'Gasoline',      unit:'$/gal',    category:'Energy',      emoji:'⛽', sig:'NEUT', conf:50, aiNote:'Refinery margins normalizing. Summer driving season demand boost expected but tempered by EV adoption trends.' },
-  { sym:'WHEAT',       yahoo:'ZW=F',  name:'Wheat',         unit:'cts/bu',   category:'Agriculture', emoji:'🌾', sig:'BEAR', conf:62, aiNote:'Record Australian output and Black Sea corridor stability pressuring prices. Supply-side fundamentals bearish near-term.' },
-  { sym:'CORN',        yahoo:'ZC=F',  name:'Corn',          unit:'cts/bu',   category:'Agriculture', emoji:'🌽', sig:'NEUT', conf:50, aiNote:'USDA raised production estimates above consensus. Ethanol demand provides price floor but upside is limited.' },
-  { sym:'SOYBEANS',    yahoo:'ZS=F',  name:'Soybeans',      unit:'cts/bu',   category:'Agriculture', emoji:'🫘', sig:'NEUT', conf:52, aiNote:'South American harvest adding supply pressure. China import demand is the key swing factor this season.' },
-  { sym:'COFFEE',      yahoo:'KC=F',  name:'Coffee',        unit:'cts/lb',   category:'Agriculture', emoji:'☕', sig:'BULL', conf:68, aiNote:'La Niña weather disruptions to Brazilian harvest reducing supply. Global demand resilient at record levels.' },
-  { sym:'SUGAR',       yahoo:'SB=F',  name:'Sugar',         unit:'cts/lb',   category:'Agriculture', emoji:'🍬', sig:'BEAR', conf:58, aiNote:'Indian export ban lifted, adding global supply. Thai production also recovering from last year\'s drought.' },
-  { sym:'COTTON',      yahoo:'CT=F',  name:'Cotton',        unit:'cts/lb',   category:'Agriculture', emoji:'🌸', sig:'NEUT', conf:50, aiNote:'Demand from Asian textile mills steady but synthetic fibre substitution limits upside.' },
 ];
 
-const CATEGORIES = ['All', 'Metals', 'Energy', 'Agriculture'] as const;
+const CATEGORIES = ['All', 'Metals', 'Energy'] as const;
 type Category = typeof CATEGORIES[number];
 
 function pctColor(v: number | null) {
@@ -128,7 +122,6 @@ export default function CommoditiesPage() {
   const catStats = {
     Metals: { count: COMMODITIES.filter(c => c.category === 'Metals').length, up: COMMODITIES.filter(c => c.category === 'Metals' && (quotes[c.yahoo]?.changePercent ?? 0) > 0).length },
     Energy: { count: COMMODITIES.filter(c => c.category === 'Energy').length, up: COMMODITIES.filter(c => c.category === 'Energy' && (quotes[c.yahoo]?.changePercent ?? 0) > 0).length },
-    Agriculture: { count: COMMODITIES.filter(c => c.category === 'Agriculture').length, up: COMMODITIES.filter(c => c.category === 'Agriculture' && (quotes[c.yahoo]?.changePercent ?? 0) > 0).length },
   };
 
   return (
@@ -186,11 +179,11 @@ export default function CommoditiesPage() {
 
       {/* Summary band */}
       <div className="cmdty-summary-band">
-        {(['Metals', 'Energy', 'Agriculture'] as const).map(cat => {
+        {(['Metals', 'Energy'] as const).map(cat => {
           const items = COMMODITIES.filter(c => c.category === cat);
           const upCount = items.filter(c => (quotes[c.yahoo]?.changePercent ?? 0) > 0).length;
           const dnCount = items.filter(c => (quotes[c.yahoo]?.changePercent ?? 0) < 0).length;
-          const catEmoji = cat === 'Metals' ? '⚙️' : cat === 'Energy' ? '⚡' : '🌿';
+          const catEmoji = cat === 'Metals' ? '⚙️' : '⚡';
           return (
             <div key={cat} className="cmdty-sum-seg" onClick={() => setCategory(cat)} style={{ cursor: 'pointer' }}>
               <span className="cmdty-sum-cat">{catEmoji} {cat}</span>
@@ -209,12 +202,12 @@ export default function CommoditiesPage() {
 
         {/* Grid */}
         <div className="cmdty-grid-wrap">
-          {(['Metals', 'Energy', 'Agriculture'] as const)
+          {(['Metals', 'Energy'] as const)
             .filter(cat => category === 'All' || cat === category)
             .map(cat => {
               const items = filtered.filter(c => c.category === cat);
               if (items.length === 0) return null;
-              const catEmoji = cat === 'Metals' ? '⚙️' : cat === 'Energy' ? '⚡' : '🌿';
+              const catEmoji = cat === 'Metals' ? '⚙️' : '⚡';
               return (
                 <div key={cat} className="cmdty-section">
                   <div className="cmdty-section-hdr">{catEmoji} {cat}</div>

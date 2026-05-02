@@ -372,13 +372,6 @@ export const COMMODITIES_UNIVERSE: StockEntry[] = [
   {sym:'NAT_GAS',yahoo:'NG=F',name:'Natural Gas (NYMEX)',sector:'Energy'},
   {sym:'GASOLINE',yahoo:'RB=F',name:'RBOB Gasoline',sector:'Energy'},
   {sym:'HEATING_OIL',yahoo:'HO=F',name:'Heating Oil',sector:'Energy'},
-  {sym:'WHEAT',yahoo:'ZW=F',name:'Wheat Futures (CBOT)',sector:'Agriculture'},
-  {sym:'CORN',yahoo:'ZC=F',name:'Corn Futures (CBOT)',sector:'Agriculture'},
-  {sym:'SOYBEANS',yahoo:'ZS=F',name:'Soybean Futures (CBOT)',sector:'Agriculture'},
-  {sym:'COFFEE',yahoo:'KC=F',name:'Coffee Futures (ICE)',sector:'Agriculture'},
-  {sym:'SUGAR',yahoo:'SB=F',name:'Sugar No.11 (ICE)',sector:'Agriculture'},
-  {sym:'COTTON',yahoo:'CT=F',name:'Cotton Futures (ICE)',sector:'Agriculture'},
-  {sym:'COCOA',yahoo:'CC=F',name:'Cocoa Futures (ICE)',sector:'Agriculture'},
 ];
 
 export const UNIVERSE_MAP: Record<string, StockEntry[]> = {
