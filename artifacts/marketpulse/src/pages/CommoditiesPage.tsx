@@ -78,14 +78,30 @@ export default function CommoditiesPage() {
   const [selected, setSelected] = useState<CommodityItem | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [newsLoading, setNewsLoading] = useState(false);
+  const [currency, setCurrency] = useState<'USD' | 'INR'>('USD');
+  const [usdInr, setUsdInr] = useState<number>(83.5);
+
+  const isINR = currency === 'INR';
+
+  function fmtCurrency(usdPrice: number | null): string {
+    if (usdPrice == null) return '—';
+    if (isINR) {
+      const inr = usdPrice * usdInr;
+      return '₹' + inr.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+    return '$' + fmtPrice(usdPrice);
+  }
 
   const fetchQuotes = useCallback(async () => {
-    const syms = COMMODITIES.map(c => c.yahoo).join(',');
+    const syms = [...COMMODITIES.map(c => c.yahoo), 'INR=X'].join(',');
     try {
-      const res = await fetch(`/api/quotes?symbols=${syms}`);
+      const res = await fetch(`/api/quotes?symbols=${encodeURIComponent(syms)}`);
       const data = await res.json();
       const map: Record<string, LiveQuote> = {};
-      for (const q of data.quotes ?? []) map[q.symbol] = q;
+      for (const q of data.quotes ?? []) {
+        if (q.symbol === 'INR=X') { if (q.price) setUsdInr(q.price); }
+        else map[q.symbol] = q;
+      }
       setQuotes(map);
     } catch { /* keep stale */ } finally { setQuotesLoading(false); }
   }, []);
@@ -148,7 +164,18 @@ export default function CommoditiesPage() {
           ))}
         </div>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* USD / INR currency toggle */}
+          <div style={{ display: 'flex', gap: 2, border: '1px solid #f5c24244', borderRadius: 3, overflow: 'hidden' }}>
+            <button
+              onClick={() => setCurrency('USD')}
+              style={{ fontFamily: 'var(--font)', fontSize: 10, fontWeight: 700, padding: '4px 10px', cursor: 'pointer', border: 'none', background: currency === 'USD' ? '#f5c24230' : 'transparent', color: currency === 'USD' ? '#f5c242' : '#5a7a94', transition: 'all .15s' }}
+            >$ USD</button>
+            <button
+              onClick={() => setCurrency('INR')}
+              style={{ fontFamily: 'var(--font)', fontSize: 10, fontWeight: 700, padding: '4px 10px', cursor: 'pointer', border: 'none', borderLeft: '1px solid #f5c24244', background: currency === 'INR' ? '#ff993330' : 'transparent', color: currency === 'INR' ? '#ff9933' : '#5a7a94', transition: 'all .15s' }}
+            >₹ INR</button>
+          </div>
           <button onClick={() => { fetchQuotes(); fetchNews(); }} className="news-refresh-btn" disabled={quotesLoading}>
             {quotesLoading ? <>⟳ Refreshing...</> : <>↺ Refresh</>}
           </button>
@@ -214,7 +241,7 @@ export default function CommoditiesPage() {
                           <div className="cmdty-card-price" style={{ color: chgPct == null ? 'var(--text)' : pctColor(chgPct) }}>
                             {quotesLoading && price == null
                               ? <span style={{ color: 'var(--muted)', fontSize: 14 }}>Loading...</span>
-                              : `$${fmtPrice(price)}`
+                              : fmtCurrency(price)
                             }
                           </div>
                           <div className="cmdty-card-chg">
@@ -270,7 +297,7 @@ export default function CommoditiesPage() {
                 <div className="cmdty-detail-unit">{selected.unit} · {selected.category}</div>
 
                 <div className="cmdty-detail-price" style={{ color: pctColor(chgPct) }}>
-                  ${fmtPrice(price)}
+                  {fmtCurrency(price)}
                 </div>
                 <div className="cmdty-detail-chg">
                   {chgPct != null && (

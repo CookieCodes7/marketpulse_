@@ -125,6 +125,10 @@ export default function Terminal() {
   const [quoteStatus, setQuoteStatus] = useState<'loading' | 'live' | 'error'>('loading');
   const [selectedCountry, setSelectedCountry] = useState<number | null>(null);
 
+  // ── Commodity currency toggle (USD ↔ INR) ─────────────────────────────────
+  const [cmdtyCurrency, setCmdtyCurrency] = useState<'USD' | 'INR'>('USD');
+  const [usdInr, setUsdInr] = useState<number>(83.5);
+
   // ── Resizable panels ───────────────────────────────────────────────────────
   const [leftWidth, setLeftWidth] = useState(180);
   const [rightWidth, setRightWidth] = useState(220);
@@ -205,6 +209,15 @@ export default function Terminal() {
   );
 
   const refetch = useRealTimeQuotes(flatWatchlist, handleQuoteUpdate, 45000);
+
+  // Fetch live USD/INR rate whenever Commodities market is active
+  useEffect(() => {
+    if (activeMarket !== 'CMDTY') return;
+    fetch('/api/quotes?symbols=INR%3DX')
+      .then(r => r.json())
+      .then(data => { const q = data.quotes?.[0]; if (q?.price) setUsdInr(q.price); })
+      .catch(() => {});
+  }, [activeMarket]);
 
   // Error timer — if no data after 12s, show retry
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -337,12 +350,25 @@ export default function Terminal() {
     : '—';
 
   // Live index rows
+  // ── FX helpers for commodity INR display ───────────────────────────────────
+  const isCmdtyINR = activeMarket === 'CMDTY' && cmdtyCurrency === 'INR';
+  const fxSym = isCmdtyINR ? '₹' : market.currency;
+  const fxFmt = (p: number, fallback = '...'): string => {
+    if (p <= 0) return fallback;
+    const v = isCmdtyINR ? p * usdInr : p;
+    if (isCmdtyINR) return '₹' + v.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    return market.currency + v.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const liveIdxRows = market.indices.map((idx, i) => {
     const q = liveIndices[`${activeMarket}:${i}`];
     if (!q || q.price === null) return idx;
     const dir = (q.change ?? 0) >= 0 ? 1 : -1;
     const s = dir >= 0 ? '+' : '';
-    return { ...idx, val: q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), chg: `${s}${(q.change ?? 0).toFixed(2)}`, chgP: `${s}${(q.changePercent ?? 0).toFixed(2)}%`, dir };
+    const displayPrice = isCmdtyINR
+      ? '₹' + (q.price * usdInr).toLocaleString('en-IN', { maximumFractionDigits: 0 })
+      : q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return { ...idx, val: displayPrice, chg: `${s}${(q.change ?? 0).toFixed(2)}`, chgP: `${s}${(q.changePercent ?? 0).toFixed(2)}%`, dir };
   });
 
   return (
@@ -354,7 +380,7 @@ export default function Terminal() {
           {[...stocks, ...stocks].map((s, i) => (
             <span key={i} className="tick-item">
               <span className="tick-sym">{s.sym.split('.')[0]}</span>
-              <span className="tick-price">{s.price > 0 ? s.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</span>
+              <span className="tick-price">{s.price > 0 ? fxFmt(s.price, '—') : '—'}</span>
               <span className={s.chg >= 0 ? 'tick-chg-up' : 'tick-chg-dn'}>
                 {s.chg >= 0 ? '+' : ''}{Math.abs(s.chgP).toFixed(2)}%
               </span>
@@ -394,6 +420,20 @@ export default function Terminal() {
         <div className="mp-market-badge" style={{ fontSize: 12, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '6px 12px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
+
+        {/* Commodity currency toggle — only visible when Commodities market is active */}
+        {activeMarket === 'CMDTY' && (
+          <div style={{ display: 'flex', gap: 2, border: '1px solid #f5c24244', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
+            <button
+              onClick={() => setCmdtyCurrency('USD')}
+              style={{ fontFamily: 'var(--font)', fontSize: 10, fontWeight: 700, padding: '4px 10px', cursor: 'pointer', border: 'none', background: cmdtyCurrency === 'USD' ? '#f5c24230' : 'transparent', color: cmdtyCurrency === 'USD' ? '#f5c242' : '#5a7a94', transition: 'all .15s' }}
+            >$ USD</button>
+            <button
+              onClick={() => setCmdtyCurrency('INR')}
+              style={{ fontFamily: 'var(--font)', fontSize: 10, fontWeight: 700, padding: '4px 10px', cursor: 'pointer', border: 'none', borderLeft: '1px solid #f5c24244', background: cmdtyCurrency === 'INR' ? '#ff993330' : 'transparent', color: cmdtyCurrency === 'INR' ? '#ff9933' : '#5a7a94', transition: 'all .15s' }}
+            >₹ INR</button>
+          </div>
+        )}
 
         <div className="hdr-stat">
           <span className="lbl">{market.benchmarkLabel}</span>
@@ -445,7 +485,7 @@ export default function Terminal() {
                   </span>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     <span className={chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 11, fontWeight: 500 }}>
-                      {price > 0 ? `${market.currency}${price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '...'}
+                      {price > 0 ? fxFmt(price) : '...'}
                     </span>
                     <button
                       onClick={e => { e.stopPropagation(); handleRemoveStock(s.sym, i); }}
@@ -505,7 +545,7 @@ export default function Terminal() {
               </div>
               <div className={`stock-price ${activeStock.chg >= 0 ? 'bull' : 'bear'}`}>
                 {activeStock.price > 0
-                  ? `${market.currency}${activeStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  ? fxFmt(activeStock.price)
                   : <span style={{ color: 'var(--muted)', fontSize: 16 }}>Loading...</span>}
               </div>
               <div className="stock-meta">
@@ -516,7 +556,7 @@ export default function Terminal() {
             </div>
           </div>
 
-          <SparkChart stock={activeStock} currency={market.currency} />
+          <SparkChart stock={activeStock} currency={fxSym} />
 
           {/* AI Panel */}
           <div className="ai-panel-row">
@@ -544,7 +584,7 @@ export default function Terminal() {
                 </div>
               ) : (
                 <div className="signal-val" style={{ color: col }}>
-                  {displayTarget > 0 ? `${market.currency}${displayTarget.toLocaleString('en-IN')}` : '—'}
+                  {displayTarget > 0 ? fxFmt(displayTarget, '—') : '—'}
                 </div>
               )}
               <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
