@@ -361,11 +361,32 @@ export const JAPAN_UNIVERSE: StockEntry[] = [
   {sym:'3659.T',yahoo:'3659.T',name:'Nexon Co.',sector:'Gaming'},
 ];
 
+export const COMMODITIES_UNIVERSE: StockEntry[] = [
+  {sym:'GOLD',yahoo:'GC=F',name:'Gold Futures (COMEX)',sector:'Precious Metals'},
+  {sym:'SILVER',yahoo:'SI=F',name:'Silver Futures (COMEX)',sector:'Precious Metals'},
+  {sym:'PLATINUM',yahoo:'PL=F',name:'Platinum Futures',sector:'Precious Metals'},
+  {sym:'PALLADIUM',yahoo:'PA=F',name:'Palladium Futures',sector:'Precious Metals'},
+  {sym:'COPPER',yahoo:'HG=F',name:'Copper Futures (COMEX)',sector:'Base Metals'},
+  {sym:'OIL_WTI',yahoo:'CL=F',name:'WTI Crude Oil (NYMEX)',sector:'Energy'},
+  {sym:'OIL_BRENT',yahoo:'BZ=F',name:'Brent Crude Oil',sector:'Energy'},
+  {sym:'NAT_GAS',yahoo:'NG=F',name:'Natural Gas (NYMEX)',sector:'Energy'},
+  {sym:'GASOLINE',yahoo:'RB=F',name:'RBOB Gasoline',sector:'Energy'},
+  {sym:'HEATING_OIL',yahoo:'HO=F',name:'Heating Oil',sector:'Energy'},
+  {sym:'WHEAT',yahoo:'ZW=F',name:'Wheat Futures (CBOT)',sector:'Agriculture'},
+  {sym:'CORN',yahoo:'ZC=F',name:'Corn Futures (CBOT)',sector:'Agriculture'},
+  {sym:'SOYBEANS',yahoo:'ZS=F',name:'Soybean Futures (CBOT)',sector:'Agriculture'},
+  {sym:'COFFEE',yahoo:'KC=F',name:'Coffee Futures (ICE)',sector:'Agriculture'},
+  {sym:'SUGAR',yahoo:'SB=F',name:'Sugar No.11 (ICE)',sector:'Agriculture'},
+  {sym:'COTTON',yahoo:'CT=F',name:'Cotton Futures (ICE)',sector:'Agriculture'},
+  {sym:'COCOA',yahoo:'CC=F',name:'Cocoa Futures (ICE)',sector:'Agriculture'},
+];
+
 export const UNIVERSE_MAP: Record<string, StockEntry[]> = {
   IN: INDIA_UNIVERSE,
   US: USA_UNIVERSE,
   CN: CHINA_UNIVERSE,
   JP: JAPAN_UNIVERSE,
+  CMDTY: COMMODITIES_UNIVERSE,
 };
 
 export function searchStocks(marketId: string, query: string, limit = 10): StockEntry[] {

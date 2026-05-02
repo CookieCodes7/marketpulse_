@@ -2,7 +2,7 @@
 
 ## Overview
 
-A professional financial terminal built as a pnpm workspace monorepo. Features real-time stock data, AI-powered analysis, portfolio tracking, and a live news feed.
+A professional financial terminal built as a pnpm workspace monorepo. Features real-time stock data, AI-powered analysis, portfolio tracking, live news feed, and a full Commodities market (Gold, Silver, Oil, Gas, Agriculture, and more).
 
 ## Stack
 

@@ -5,6 +5,7 @@ import MapPage from "@/pages/MapPage";
 import StockPage from "@/pages/StockPage";
 import PortfolioPage from "@/pages/PortfolioPage";
 import NewsPage from "@/pages/NewsPage";
+import CommoditiesPage from "@/pages/CommoditiesPage";
 import LandingPage from "@/pages/LandingPage";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 
@@ -35,6 +36,9 @@ function Router() {
       </Route>
       <Route path="/news">
         <AuthGuard><NewsPage /></AuthGuard>
+      </Route>
+      <Route path="/commodities">
+        <AuthGuard><CommoditiesPage /></AuthGuard>
       </Route>
       <Route path="/">
         <AuthGuard><Terminal /></AuthGuard>

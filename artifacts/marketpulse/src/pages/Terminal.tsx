@@ -25,7 +25,7 @@ function getSentColor(sent: string) {
 }
 
 const MARKET_ACCENT: Record<string, string> = {
-  IN: '#ff9933', US: '#3b9eff', CN: '#ff4d4f', JP: '#ff6b6b',
+  IN: '#ff9933', US: '#3b9eff', CN: '#ff4d4f', JP: '#ff6b6b', CMDTY: '#f5c242',
 };
 
 function fmtVol(v: number | null): string {
@@ -111,7 +111,7 @@ export default function Terminal() {
 
   // stocksByMarket: marketId → Stock[]
   const [stocksByMarket, setStocksByMarket] = useState<Record<string, Stock[]>>(() =>
-    ({ IN: makeDefaultStocks('IN'), US: makeDefaultStocks('US'), CN: makeDefaultStocks('CN'), JP: makeDefaultStocks('JP') })
+    ({ IN: makeDefaultStocks('IN'), US: makeDefaultStocks('US'), CN: makeDefaultStocks('CN'), JP: makeDefaultStocks('JP'), CMDTY: makeDefaultStocks('CMDTY') })
   );
 
   // watchlistSymbols: marketId → { ourSym: yahooSym }
@@ -119,7 +119,7 @@ export default function Terminal() {
     makeDefaultWatchlist
   );
 
-  const [activeIdxByMarket, setActiveIdxByMarket] = useState<Record<string, number>>({ IN: 0, US: 0, CN: 0, JP: 0 });
+  const [activeIdxByMarket, setActiveIdxByMarket] = useState<Record<string, number>>({ IN: 0, US: 0, CN: 0, JP: 0, CMDTY: 0 });
   const [liveQuotes, setLiveQuotes] = useState<Record<string, QuoteResult>>({});
   const [liveIndices, setLiveIndices] = useState<Record<string, QuoteResult>>({});
   const [quoteStatus, setQuoteStatus] = useState<'loading' | 'live' | 'error'>('loading');
@@ -249,7 +249,7 @@ export default function Terminal() {
 
     // Add to stocks list
     setStocksByMarket(prev => {
-      const updated = [...prev[mId], newStock];
+      const updated = [...(prev[mId] ?? []), newStock];
       return { ...prev, [mId]: updated };
     });
 
@@ -374,6 +374,9 @@ export default function Terminal() {
       <div className="mp-header">
         <Link href="/" className="mp-logo" style={{ color: accentCol }}>
           MARKET<span style={{ color: '#3b9eff' }}>PULSE</span>
+        </Link>
+        <Link href="/commodities" className="mp-nav-btn" style={{ color: '#f5c242', background: '#f5c24218', border: '2px solid #f5c24255' }}>
+          🏅 Commodities
         </Link>
         <Link href="/portfolio" className="mp-nav-btn" style={{ color: '#3b9eff', background: '#3b9eff18', border: '2px solid #3b9eff55' }}>
           📊 Portfolio
@@ -640,6 +643,10 @@ export default function Terminal() {
           <span className="mob-nav-icon">📡</span>
           <span className="mob-nav-label">Feed</span>
         </button>
+        <Link href="/commodities" className="mob-nav-btn mob-nav-link">
+          <span className="mob-nav-icon">🏅</span>
+          <span className="mob-nav-label">Cmdty</span>
+        </Link>
         <Link href="/portfolio" className="mob-nav-btn mob-nav-link">
           <span className="mob-nav-icon">📊</span>
           <span className="mob-nav-label">Portfolio</span>

@@ -33,6 +33,10 @@ export const DEFAULT_YAHOO_SYMBOLS: Record<string, Record<string, string>> = {
     '7203.T':'7203.T', '6758.T':'6758.T', '9984.T':'9984.T', '7974.T':'7974.T',
     '7267.T':'7267.T', '8058.T':'8058.T', '6752.T':'6752.T', '9432.T':'9432.T',
   },
+  CMDTY: {
+    GOLD:'GC=F', SILVER:'SI=F', OIL_WTI:'CL=F', OIL_BRENT:'BZ=F',
+    NAT_GAS:'NG=F', COPPER:'HG=F', WHEAT:'ZW=F', CORN:'ZC=F',
+  },
 };
 
 export const INDEX_SYMBOLS: Record<string, string[]> = {
@@ -40,6 +44,7 @@ export const INDEX_SYMBOLS: Record<string, string[]> = {
   US: ['^GSPC', '^IXIC', '^DJI', '^RUT'],
   CN: ['000001.SS', '399001.SZ', '^HSI', '000300.SS'],
   JP: ['^N225', '^TOPX', '^NKY', '2038.T'],
+  CMDTY: ['GC=F', 'CL=F', 'SI=F', 'NG=F'],
 };
 
 async function fetchQuotes(symbols: string[]): Promise<Record<string, QuoteResult>> {

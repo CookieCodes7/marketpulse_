@@ -257,8 +257,66 @@ const JAPAN: Market = {
   },
 };
 
-export const MARKETS: Record<string, Market> = { IN: INDIA, US: USA, CN: CHINA, JP: JAPAN };
-export const MARKET_ORDER = ['IN', 'US', 'CN', 'JP'];
+// ── COMMODITIES ───────────────────────────────────────────────────────────────
+const COMMODITIES: Market = {
+  id: 'CMDTY',
+  name: 'Commodities',
+  flag: '🏅',
+  currency: '$',
+  exchange: 'NYMEX / COMEX',
+  benchmarkLabel: 'Gold $/oz',
+  benchmarkVal: '2,330.00',
+  vixLabel: 'WTI Oil',
+  vixVal: '78.40',
+  timezone: 'EST',
+  stocks: [
+    {sym:'GOLD',name:'Gold Futures',price:2330.00,chg:12.50,chgP:0.54,sig:'BULL',conf:82,target:2450,days:7,vol:'—',pe:'—'},
+    {sym:'SILVER',name:'Silver Futures',price:27.42,chg:0.38,chgP:1.41,sig:'BULL',conf:74,target:30,days:7,vol:'—',pe:'—'},
+    {sym:'OIL_WTI',name:'WTI Crude Oil',price:78.40,chg:-0.82,chgP:-1.03,sig:'NEUT',conf:55,target:76,days:5,vol:'—',pe:'—'},
+    {sym:'OIL_BRENT',name:'Brent Crude Oil',price:82.35,chg:-0.71,chgP:-0.85,sig:'NEUT',conf:52,target:80,days:5,vol:'—',pe:'—'},
+    {sym:'NAT_GAS',name:'Natural Gas',price:2.18,chg:0.04,chgP:1.87,sig:'NEUT',conf:48,target:2.50,days:7,vol:'—',pe:'—'},
+    {sym:'COPPER',name:'Copper Futures',price:4.42,chg:0.08,chgP:1.84,sig:'BULL',conf:71,target:4.80,days:7,vol:'—',pe:'—'},
+    {sym:'WHEAT',name:'Wheat (CBOT)',price:584.25,chg:-7.50,chgP:-1.27,sig:'BEAR',conf:62,target:550,days:5,vol:'—',pe:'—'},
+    {sym:'CORN',name:'Corn (CBOT)',price:448.50,chg:-4.25,chgP:-0.94,sig:'NEUT',conf:50,target:440,days:5,vol:'—',pe:'—'},
+  ],
+  indices: [
+    {name:'Gold $/oz',val:'2,330.00',chg:'+12.50',chgP:'+0.54%',dir:1},
+    {name:'Silver $/oz',val:'27.42',chg:'+0.38',chgP:'+1.41%',dir:1},
+    {name:'WTI $/bbl',val:'78.40',chg:'-0.82',chgP:'-1.03%',dir:-1},
+    {name:'Nat Gas',val:'2.18',chg:'+0.04',chgP:'+1.87%',dir:1},
+  ],
+  news: [
+    {src:'Reuters',time:'5m ago',ticker:'GOLD',title:"Gold edges higher as dollar weakens; central bank buying surges to 30-year highs",sent:'BULL',impact:0.82},
+    {src:'Bloomberg',time:'13m ago',ticker:'OIL_WTI',title:'Oil slips on demand concerns; OPEC+ compliance under scrutiny as production rises',sent:'BEAR',impact:0.74},
+    {src:'FT',time:'22m ago',ticker:'SILVER',title:'Silver rallies on industrial demand; solar panel production hits record high in Q1',sent:'BULL',impact:0.77},
+    {src:'Reuters',time:'34m ago',ticker:'COPPER',title:'Copper surges on China stimulus hopes; LME inventory falls to 3-year lows',sent:'BULL',impact:0.81},
+    {src:'Bloomberg',time:'47m ago',ticker:'NAT_GAS',title:'Natural gas inventories beat estimates; mild weather forecast weighs on near-term prices',sent:'BEAR',impact:0.58},
+    {src:'AgriNews',time:'58m ago',ticker:'WHEAT',title:'Wheat futures fall on bumper Australian harvest forecast; Ukraine corridor deal holding',sent:'BEAR',impact:0.65},
+    {src:'Reuters',time:'1h ago',ticker:'CORN',title:'Corn drops as USDA raises crop production estimates; planting progress ahead of schedule',sent:'BEAR',impact:0.60},
+    {src:'Bloomberg',time:'1h ago',ticker:'OIL_BRENT',title:'Brent crude consolidates near $82; Middle East risk premium fading on ceasefire talks',sent:'NEUT',impact:0.55},
+  ],
+  corr: [
+    {sym:'GOLD',mentions:8421,score:0.82,dir:1},
+    {sym:'OIL_WTI',mentions:6204,score:-0.61,dir:-1},
+    {sym:'COPPER',mentions:4182,score:0.79,dir:1},
+    {sym:'SILVER',mentions:3841,score:0.74,dir:1},
+    {sym:'NAT_GAS',mentions:2104,score:-0.48,dir:-1},
+    {sym:'WHEAT',mentions:1842,score:-0.52,dir:-1},
+  ],
+  aiExplains: {
+    GOLD: 'Gold is in a sustained bullish cycle driven by record central bank purchases and rising geopolitical risk premiums. Real yields remain suppressed and dollar weakness is a structural tailwind for the precious metal.',
+    SILVER: 'Silver is bullish on dual demand — safe-haven investment flows and surging industrial use in solar panels and EV batteries. The gold-silver ratio at 85x suggests silver has significant upside relative to gold.',
+    OIL_WTI: 'WTI crude is neutral. OPEC+ compliance uncertainty and demand softness from China offset geopolitical supply risk. The $75–$85 range is the near-term trading band, with downside risks building.',
+    OIL_BRENT: 'Brent crude is neutral. Middle East risk premium is fading as ceasefire talks progress. Global demand remains mixed — developed market softness is offsetting emerging market growth, particularly India.',
+    NAT_GAS: 'Natural gas is neutral to bearish near-term. Mild weather forecasts suppress demand. However, record LNG export infrastructure additions in 2025 create a medium-term structural demand floor.',
+    COPPER: 'Copper is strongly bullish. The energy transition requires 3× more copper than traditional infrastructure. China stimulus and LME inventory depletion are powerful near-term catalysts for further upside.',
+    WHEAT: 'Bearish. Record Australian output and the holding of Black Sea shipping corridors are pressuring wheat prices. Global supply-side fundamentals favour further downside toward the $540 support level.',
+    CORN: 'Neutral to bearish. USDA raised production estimates above consensus and planting progress is running ahead of schedule. Ethanol demand provides a floor but meaningful upside is limited this season.',
+  },
+};
+
+export const MARKETS: Record<string, Market> = { IN: INDIA, US: USA, CN: CHINA, JP: JAPAN, CMDTY: COMMODITIES };
+export const MARKET_ORDER = ['IN', 'US', 'CN', 'JP', 'CMDTY'];
 
 export const COUNTRY_DATA: Record<number, {
   name: string; score: number; sig: string; sector: string; trend: string;

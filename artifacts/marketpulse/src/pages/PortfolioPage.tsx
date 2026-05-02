@@ -10,6 +10,7 @@ const MARKET_META: Record<string, { flag: string; label: string; currency: strin
   US: { flag: '🇺🇸', label: 'USA', currency: '$', exchange: 'NYSE/NASDAQ' },
   CN: { flag: '🇨🇳', label: 'China', currency: '¥', exchange: 'HK/ADR' },
   JP: { flag: '🇯🇵', label: 'Japan', currency: '¥', exchange: 'TSE' },
+  CMDTY: { flag: '🏅', label: 'Commodities', currency: '$', exchange: 'NYMEX/COMEX' },
 };
 
 function fmt(n: number | null | undefined, currency = '', decimals = 2): string {

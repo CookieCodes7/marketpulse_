@@ -12,6 +12,7 @@ const MARKET_COLORS: Record<string, string> = {
   US: '#3b9eff',
   CN: '#ff4d4f',
   JP: '#ff6b6b',
+  CMDTY: '#f5c242',
 };
 
 function fmtIdx(v: number | null | undefined, fallback: string): string {

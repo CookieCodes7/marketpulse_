@@ -9,6 +9,7 @@ const MARKET_SYMBOLS: Record<string, string[]> = {
   US: ["^GSPC", "AAPL", "MSFT", "NVDA", "AMZN", "TSLA"],
   CN: ["^HSI", "9988.HK", "700.HK", "3690.HK", "BABA"],
   JP: ["^N225", "7203.T", "6758.T", "9984.T", "6861.T"],
+  CMDTY: ["GC=F", "CL=F", "SI=F", "NG=F", "HG=F", "ZW=F", "ZC=F"],
 };
 
 const US_INDICES = new Set(["^GSPC", "^DJI", "^IXIC", "^RUT", "^VIX", "^NDX", "^OEX", "^NYA", "^W5000"]);
@@ -25,6 +26,8 @@ function tickerMatchesMarket(ticker: string, market: string): boolean {
         || CN_ADRS.has(ticker) || ticker === "^HSI" || ticker === "^HSCE";
     case "JP":
       return ticker.endsWith(".T") || ticker === "^N225" || ticker === "^TOPX";
+    case "CMDTY":
+      return ticker.endsWith("=F") || ["GLD","SLV","USO","UNG","GDX","DBC","PDBC","IAU"].includes(ticker);
     default:
       return true;
   }

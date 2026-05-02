@@ -21,11 +21,12 @@ interface Quote {
 }
 
 const MARKET_TABS = [
-  { id: 'ALL', label: '🌐 All', color: '#3b9eff' },
-  { id: 'IN',  label: '🇮🇳 India',  color: '#ff9933' },
-  { id: 'US',  label: '🇺🇸 USA',    color: '#3b9eff' },
-  { id: 'CN',  label: '🇨🇳 China',  color: '#ff4d4f' },
-  { id: 'JP',  label: '🇯🇵 Japan',  color: '#ff6b6b' },
+  { id: 'ALL',   label: '🌐 All',          color: '#3b9eff' },
+  { id: 'IN',    label: '🇮🇳 India',       color: '#ff9933' },
+  { id: 'US',    label: '🇺🇸 USA',         color: '#3b9eff' },
+  { id: 'CN',    label: '🇨🇳 China',       color: '#ff4d4f' },
+  { id: 'JP',    label: '🇯🇵 Japan',       color: '#ff6b6b' },
+  { id: 'CMDTY', label: '🏅 Commodities',  color: '#f5c242' },
 ];
 
 const REFRESH_INTERVAL = 90;
