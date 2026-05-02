@@ -66,7 +66,6 @@ export default function Terminal() {
   const [liveIndices, setLiveIndices] = useState<Record<string, QuoteResult>>({});
   const [quoteStatus, setQuoteStatus] = useState<'loading' | 'live' | 'error'>('loading');
   const [selectedCountry, setSelectedCountry] = useState<number | null>(null);
-  const [activeFilter, setActiveFilter] = useState('all');
 
   // ── Live AI analysis cache ─────────────────────────────────────────────────
   const [analysisCache, setAnalysisCache] = useState<Record<string, {
@@ -471,11 +470,6 @@ export default function Terminal() {
           <div className="map-section">
             <div className="map-hdr">
               <span>Global Market Impact Map</span>
-              {(['all', 'high', 'tech', 'energy', '24h', '7d'] as const).map(f => (
-                <button key={f} className={`filter-btn${activeFilter === f ? ' active' : ''}`} onClick={() => setActiveFilter(f)}>
-                  {f === 'all' ? 'All' : f === 'high' ? 'High Signal' : f === 'tech' ? 'Tech' : f === 'energy' ? 'Energy' : f}
-                </button>
-              ))}
               <Link href="/map" className="map-link-btn">⊞ Full Screen</Link>
             </div>
             <WorldMap height={220} onCountryClick={handleCountryClick} />
