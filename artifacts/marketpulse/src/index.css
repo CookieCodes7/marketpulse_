@@ -965,9 +965,16 @@ body {
 .lp-cta-section {
   padding: 100px 40px;
   text-align: center;
-  background: var(--bg2);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border: none;
+  position: relative;
+}
+.lp-cta-section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 60%, rgba(0,160,140,0.07) 0%, transparent 70%);
+  pointer-events: none;
 }
 .lp-cta-inner { max-width: 680px; margin: 0 auto; }
 .lp-cta-title { font-size: 40px; font-weight: 700; color: var(--text); margin-bottom: 16px; letter-spacing: -0.5px; }
