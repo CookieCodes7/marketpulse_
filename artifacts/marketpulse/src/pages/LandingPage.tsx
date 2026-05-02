@@ -98,25 +98,8 @@ function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: (
         No credit card required · Always free · Built by Team Nexus, Jaipur
       </div>
 
-      {/* Terminal window */}
+      {/* Globe stage — borderless, flows with background */}
       <div className="lp-globe-window">
-        {/* Window bar */}
-        <div className="lp-globe-bar">
-          <div className="lp-globe-bar-dots">
-            <span style={{ background: '#ff5f57' }} />
-            <span style={{ background: '#febc2e' }} />
-            <span style={{ background: '#28c840' }} />
-          </div>
-          <span className="lp-globe-bar-title">
-            marketpulse.terminal — LIVE · {utcTime} UTC
-          </span>
-          <span className="lp-globe-bar-status">
-            <span className="lp-globe-status-dot" />
-            SYSTEM ONLINE
-          </span>
-        </div>
-
-        {/* Window body */}
         <div className="lp-globe-body">
           {/* Globe area */}
           <div className="lp-globe-area" ref={containerRef}>

@@ -1389,54 +1389,14 @@ body {
   margin-bottom: 36px;
 }
 
-/* Terminal window */
+/* Globe stage — frameless, merges with page */
 .lp-globe-window {
-  border: 1px solid #1e2d3d;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #090d12;
-  box-shadow: 0 0 0 1px #1e2d3d, 0 40px 100px #000c;
-}
-.lp-globe-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
-  background: #0e1520;
-  border-bottom: 1px solid #1e2d3d;
-  font-family: var(--font);
-  font-size: 12px;
-}
-.lp-globe-bar-dots {
-  display: flex;
-  gap: 7px;
-}
-.lp-globe-bar-dots span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.lp-globe-bar-title {
-  color: #5a7a94;
-  letter-spacing: 0.3px;
-  margin: 0 auto;
-}
-.lp-globe-bar-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: #00ff9c;
-  font-size: 11px;
-  letter-spacing: 1.5px;
-  white-space: nowrap;
-}
-.lp-globe-status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #00ff9c;
-  animation: blink 2s infinite;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  position: relative;
 }
 
 /* Body layout */
@@ -1452,8 +1412,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at center, #071828 0%, #050c14 60%, #020810 100%);
-  overflow: hidden;
+  background: transparent;
+  overflow: visible;
   padding: 32px;
 }
 .lp-globe-glow {
@@ -1560,14 +1520,18 @@ body {
 .lp-globe-right {
   width: 220px;
   flex-shrink: 0;
-  border-left: 1px solid #1e2d3d;
+  border-left: none;
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 12px;
+  padding-left: 12px;
 }
 .lp-mkt-card {
-  padding: 16px;
-  border-bottom: 1px solid #1e2d3d;
+  padding: 14px 16px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(14,22,36,0.55);
+  backdrop-filter: blur(6px);
   font-family: var(--font);
 }
 .lp-mkt-card-hdr {
@@ -1599,6 +1563,9 @@ body {
 .lp-nvda-card {
   flex: 1;
   padding: 14px 16px 10px;
+  border-radius: 10px;
+  background: rgba(14,22,36,0.55);
+  backdrop-filter: blur(6px);
   font-family: var(--font);
 }
 .lp-nvda-hdr {
@@ -1626,8 +1593,8 @@ body {
 @media (max-width: 900px) {
   .lp-showcase-section { padding: 0 20px 60px; }
   .lp-globe-body { flex-direction: column; }
-  .lp-globe-right { width: 100%; flex-direction: row; border-left: none; border-top: 1px solid #1e2d3d; }
-  .lp-mkt-card { flex: 1; border-bottom: none; border-right: 1px solid #1e2d3d; }
+  .lp-globe-right { width: 100%; flex-direction: row; border-left: none; padding-left: 0; padding-top: 12px; gap: 8px; }
+  .lp-mkt-card { flex: 1; }
   .lp-nvda-card { flex: 1; }
   .lp-globe-area { min-height: 380px; }
 }
