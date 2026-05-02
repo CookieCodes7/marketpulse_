@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import SparkChart from '../components/SparkChart';
 import WorldMap from '../components/WorldMap';
 import Clock from '../components/Clock';
 import MarketSwitcher from '../components/MarketSwitcher';
 import StockSearch from '../components/StockSearch';
 import ProfilePanel from '../components/ProfilePanel';
+import LangToggle from '../components/LangToggle';
 import { useIsMobile } from '../hooks/use-mobile';
 import { MARKETS, COUNTRY_DATA, WAR_EVENTS, Stock } from '../data';
 import { useRealTimeQuotes, QuoteResult, DEFAULT_YAHOO_SYMBOLS } from '../hooks/useRealTimeQuotes';
@@ -84,6 +86,7 @@ function UserBadge({ onClick }: { onClick: () => void }) {
 
 export default function Terminal() {
   // ── State ──────────────────────────────────────────────────────────────────
+  const { t } = useLanguage();
   const isMobile = useIsMobile();
   const [activeMarket, setActiveMarket] = useState('IN');
   const [mobilePanel, setMobilePanel] = useState<'watch' | 'chart' | 'info'>('chart');
@@ -456,12 +459,13 @@ export default function Terminal() {
         <div className="hdr-stat">
           <span className="lbl">Data</span>
           <span className="val">
-            {quoteStatus === 'loading' && <span style={{ color: 'var(--neut)' }}>◌ LOADING</span>}
-            {quoteStatus === 'live' && <span style={{ color: 'var(--bull)' }}><span className="session-dot" style={{ background: 'var(--bull)' }} />LIVE</span>}
-            {quoteStatus === 'error' && <span style={{ color: 'var(--bear)', cursor: 'pointer' }} onClick={() => { setQuoteStatus('loading'); refetch(); }}>⚠ RETRY</span>}
+            {quoteStatus === 'loading' && <span style={{ color: 'var(--neut)' }}>{t('status_loading')}</span>}
+            {quoteStatus === 'live' && <span style={{ color: 'var(--bull)' }}><span className="session-dot" style={{ background: 'var(--bull)' }} />{t('status_live')}</span>}
+            {quoteStatus === 'error' && <span style={{ color: 'var(--bear)', cursor: 'pointer' }} onClick={() => { setQuoteStatus('loading'); refetch(); }}>{t('btn_retry')}</span>}
           </span>
         </div>
         <Clock />
+        <LangToggle />
         <UserBadge onClick={() => setProfileOpen(true)} />
       </div>
 
@@ -481,8 +485,8 @@ export default function Terminal() {
         {/* LEFT: Watchlist */}
         <div className="mp-left" style={{ zoom: Math.max(1, Math.min(1.6, leftWidth / 180)) }}>
           <div className="panel-hdr">
-            {market.flag} Watchlist
-            <span style={{ color: 'var(--muted)' }}>{stocks.length} stocks</span>
+            {market.flag} {t('terminal_watchlist')}
+            <span style={{ color: 'var(--muted)' }}>{stocks.length} {t('terminal_stocks')}</span>
           </div>
           {stocks.map((s, i) => {
             const q = liveQuotes[`${activeMarket}:${s.sym}`];
@@ -663,8 +667,8 @@ export default function Terminal() {
           {/* War / Geopolitical News Effect */}
           <div className="war-section">
             <div className="war-hdr">
-              <span className="war-hdr-title">⚔ Geopolitical Risk · Market Impact</span>
-              <span className="war-hdr-sub">Live conflict monitoring</span>
+              <span className="war-hdr-title">{t('geo_title')}</span>
+              <span className="war-hdr-sub">{t('geo_sub')}</span>
             </div>
             {WAR_EVENTS.map(ev => {
               const sevCol = ev.severity === 'HIGH' ? '#ff4d4f' : ev.severity === 'MED' ? '#f5c242' : '#5a7a94';
@@ -711,7 +715,7 @@ export default function Terminal() {
                       ))}
                     </div>
                   ) : (
-                    <div style={{ marginTop: 7, paddingTop: 7, borderTop: '1px solid var(--border)', fontSize: 8, color: 'var(--muted)' }}>No matching headlines at this time</div>
+                    <div style={{ marginTop: 7, paddingTop: 7, borderTop: '1px solid var(--border)', fontSize: 8, color: 'var(--muted)' }}>{t('geo_no_news')}</div>
                   )}
                 </div>
               );
@@ -724,7 +728,7 @@ export default function Terminal() {
 
         {/* RIGHT: News */}
         <div className="mp-right" style={{ zoom: Math.max(1, Math.min(1.6, rightWidth / 220)) }}>
-          <div className="panel-hdr">{market.flag} {market.name} News Feed</div>
+          <div className="panel-hdr">{market.flag} {market.name} {t('news_page_title')}</div>
           {market.news.map((n, i) => (
             <div key={i} className="news-item">
               <div className="news-src"><span>{n.src}</span><span>{n.time}</span></div>

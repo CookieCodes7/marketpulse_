@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useLocation } from 'wouter';
 
 interface ProfilePanelProps {
@@ -13,6 +14,7 @@ const ACCENT = '#3b9eff';
 
 export default function ProfilePanel({ open, onClose, watchlistCount = 0, activeMarkets = 5 }: ProfilePanelProps) {
   const { user, logout, updateProfile } = useAuth();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
 
   const [editName, setEditName] = useState('');
@@ -96,7 +98,7 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
           padding: '14px 16px', borderBottom: '1px solid #1e2d3d',
           background: '#0a1218',
         }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: 1.5 }}>USER PROFILE</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: ACCENT, letterSpacing: 1.5 }}>{t('prof_title')}</span>
           <button onClick={onClose} style={ghostBtn} title="Close">✕</button>
         </div>
 
@@ -110,7 +112,7 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
           {/* Avatar circle */}
           <div
             onClick={handleAvatarClick}
-            title="Click to upload photo"
+            title={t('prof_avatar_hint')}
             style={{
               width: 72, height: 72, borderRadius: '50%',
               border: `2px solid ${ACCENT}55`,
@@ -152,25 +154,25 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
               color: planCol, border: `1px solid ${planCol}55`,
               background: `${planCol}12`, padding: '2px 8px', borderRadius: 3,
             }}>{planLabel}</span>
-            <span style={{ fontSize: 9, color: '#3a5a74' }}>Member since {joinedDate}</span>
+            <span style={{ fontSize: 9, color: '#3a5a74' }}>{t('prof_member_since')} {joinedDate}</span>
           </div>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', borderBottom: '1px solid #1e2d3d' }}>
-          {(['profile', 'prefs'] as const).map(t => (
+          {(['profile', 'prefs'] as const).map(tabId => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabId}
+              onClick={() => setTab(tabId)}
               style={{
                 flex: 1, padding: '9px 0', background: 'none',
-                border: 'none', borderBottom: `2px solid ${tab === t ? ACCENT : 'transparent'}`,
-                color: tab === t ? ACCENT : 'var(--muted)',
+                border: 'none', borderBottom: `2px solid ${tab === tabId ? ACCENT : 'transparent'}`,
+                color: tab === tabId ? ACCENT : 'var(--muted)',
                 fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, fontWeight: 700,
                 letterSpacing: 0.8, cursor: 'pointer', transition: 'color .15s',
                 textTransform: 'uppercase',
               }}
-            >{t === 'profile' ? 'Profile' : 'Preferences'}</button>
+            >{tabId === 'profile' ? t('prof_tab_profile') : t('prof_tab_prefs')}</button>
           ))}
         </div>
 
@@ -181,9 +183,9 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
             {/* Stats row */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               {[
-                { label: 'Markets', val: activeMarkets },
-                { label: 'Watchlist', val: watchlistCount },
-                { label: 'Plan', val: (user.plan ?? 'free').toUpperCase() },
+                { label: t('prof_markets'), val: activeMarkets },
+                { label: t('prof_watchlist'), val: watchlistCount },
+                { label: t('prof_plan'), val: (user.plan ?? 'free').toUpperCase() },
               ].map(s => (
                 <div key={s.label} style={{
                   background: '#111c28', border: '1px solid #1e2d3d', borderRadius: 6,
@@ -197,7 +199,7 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
 
             {/* Display name */}
             <div>
-              <label style={labelStyle}>Display Name</label>
+              <label style={labelStyle}>{t('prof_display_name')}</label>
               <input
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
@@ -209,13 +211,13 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
 
             {/* Email (read-only) */}
             <div>
-              <label style={labelStyle}>Email Address</label>
+              <label style={labelStyle}>{t('prof_email')}</label>
               <input value={user.email} readOnly style={{ ...inputStyle, color: 'var(--muted)', cursor: 'default' }} />
             </div>
 
             {/* Bio */}
             <div>
-              <label style={labelStyle}>Bio <span style={{ color: '#3a5a74' }}>({160 - editBio.length} chars left)</span></label>
+              <label style={labelStyle}>{t('prof_bio')} <span style={{ color: '#3a5a74' }}>({160 - editBio.length} {t('prof_chars_left')})</span></label>
               <textarea
                 value={editBio}
                 onChange={e => setEditBio(e.target.value.slice(0, 160))}
@@ -237,7 +239,7 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
                 letterSpacing: 0.8, transition: 'background .2s',
               }}
             >
-              {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Changes'}
+              {saving ? t('btn_saving') : saved ? t('btn_saved') : t('btn_save')}
             </button>
 
             {/* Plan upgrade (if free) */}
@@ -246,10 +248,8 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
                 background: '#1a1400', border: '1px solid #f5c24222',
                 borderRadius: 6, padding: '12px 14px',
               }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#f5c242', marginBottom: 4 }}>★ Upgrade to Pro</div>
-                <div style={{ fontSize: 9, color: '#7a6a30', lineHeight: 1.6 }}>
-                  Unlock real-time alerts, advanced AI signals, portfolio analytics, and priority data feeds.
-                </div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#f5c242', marginBottom: 4 }}>{t('prof_upgrade_title')}</div>
+                <div style={{ fontSize: 9, color: '#7a6a30', lineHeight: 1.6 }}>{t('prof_upgrade_desc')}</div>
                 <button
                   style={{
                     marginTop: 10, width: '100%', padding: '7px', borderRadius: 4,
@@ -258,7 +258,7 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
                     fontSize: 10, fontWeight: 700, cursor: 'pointer', letterSpacing: 0.5,
                   }}
                   onClick={() => updateProfile({ plan: 'pro' })}
-                >Upgrade — Coming Soon</button>
+                >{t('btn_upgrade')}</button>
               </div>
             )}
           </div>
@@ -268,39 +268,39 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
         {tab === 'prefs' && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
 
-            <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginBottom: 4 }}>NOTIFICATIONS</div>
+            <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1, marginBottom: 4 }}>{t('prof_notif')}</div>
 
             {[
-              { label: 'Breaking news alerts', sub: 'Get notified on major market headlines', val: notifNews, set: setNotifNews },
-              { label: 'Price alerts', sub: 'Trigger alerts on watchlist moves', val: notifAlert, set: setNotifAlert },
+              { label: t('prof_notif_news'), sub: t('prof_notif_news_sub'), val: notifNews, set: setNotifNews },
+              { label: t('prof_notif_price'), sub: t('prof_notif_price_sub'), val: notifAlert, set: setNotifAlert },
             ].map(p => (
               <PrefRow key={p.label} label={p.label} sub={p.sub} value={p.val} onChange={p.set} />
             ))}
 
-            <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1, margin: '12px 0 4px' }}>DISPLAY</div>
+            <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1, margin: '12px 0 4px' }}>{t('prof_display')}</div>
 
-            <PrefRow label="Compact mode" sub="Reduce padding and font sizes in terminal" value={compactMode} onChange={setCompactMode} />
+            <PrefRow label={t('prof_compact')} sub={t('prof_compact_sub')} value={compactMode} onChange={setCompactMode} />
 
-            <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1, margin: '12px 0 4px' }}>THEME</div>
+            <div style={{ fontSize: 9, color: 'var(--muted)', letterSpacing: 1, margin: '12px 0 4px' }}>{t('prof_theme')}</div>
             <div style={{
               display: 'flex', gap: 8,
             }}>
               {[
-                { id: 'dark', label: '◑ Dark', active: true },
-                { id: 'light', label: '○ Light', active: false },
-              ].map(t => (
-                <button key={t.id} style={{
-                  flex: 1, padding: '7px', borderRadius: 4, cursor: t.active ? 'default' : 'not-allowed',
-                  background: t.active ? `${ACCENT}18` : '#111c28',
-                  border: `1px solid ${t.active ? ACCENT + '55' : '#1e2d3d'}`,
-                  color: t.active ? ACCENT : '#3a5a74',
+                { id: 'dark', label: t('prof_theme_dark'), active: true },
+                { id: 'light', label: t('prof_theme_light'), active: false },
+              ].map(th => (
+                <button key={th.id} style={{
+                  flex: 1, padding: '7px', borderRadius: 4, cursor: th.active ? 'default' : 'not-allowed',
+                  background: th.active ? `${ACCENT}18` : '#111c28',
+                  border: `1px solid ${th.active ? ACCENT + '55' : '#1e2d3d'}`,
+                  color: th.active ? ACCENT : '#3a5a74',
                   fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, fontWeight: 700,
-                }}>{t.label}{!t.active ? ' (soon)' : ''}</button>
+                }}>{th.label}</button>
               ))}
             </div>
 
             <div style={{ fontSize: 9, color: '#3a5a74', marginTop: 4, lineHeight: 1.6 }}>
-              Preferences are saved locally and sync with your session.
+              {t('prof_prefs_note')}
             </div>
           </div>
         )}
@@ -318,7 +318,7 @@ export default function ProfilePanel({ open, onClose, watchlistCount = 0, active
             }}
             onMouseEnter={e => (e.currentTarget.style.background = '#ff4d4f22')}
             onMouseLeave={e => (e.currentTarget.style.background = '#ff4d4f10')}
-          >⏻  Sign Out</button>
+          >{t('btn_sign_out')}</button>
         </div>
       </div>
     </>

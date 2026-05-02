@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import Clock from '../components/Clock';
+import { useLanguage } from '../context/LanguageContext';
+import LangToggle from '../components/LangToggle';
 
 interface Article {
   uuid: string;
@@ -72,6 +74,7 @@ function getTickerColor(ticker: string): string {
 }
 
 export default function NewsPage() {
+  const { t } = useLanguage();
   const [market, setMarket] = useState('ALL');
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
@@ -156,7 +159,7 @@ export default function NewsPage() {
         <Link href="/" className="sp-back">← Terminal</Link>
         <Link href="/portfolio" className="sp-back" style={{ borderColor: '#3b9eff44', color: '#3b9eff' }}>📊 Portfolio</Link>
         <div className="sp-hdr-divider" />
-        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: 1, color: 'var(--text)' }}>📰 NEWS FEED</span>
+        <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: 1, color: 'var(--text)' }}>📰 {t('news_page_title').toUpperCase()}</span>
 
         {/* Market tabs */}
         <div style={{ display: 'flex', gap: 3, marginLeft: 12 }}>
@@ -174,25 +177,26 @@ export default function NewsPage() {
           <span style={{ position: 'absolute', left: 7, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--muted)', pointerEvents: 'none' }}>⌕</span>
           <input
             className="news-search"
-            placeholder="Filter news..."
+            placeholder={t('news_search')}
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
           />
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <LangToggle />
           <button
             onClick={() => { fetchNews(market); setCountdown(REFRESH_INTERVAL); }}
             disabled={loading}
             className="news-refresh-btn"
           >
             {loading
-              ? <><div className="sp-spinner" style={{ width: 9, height: 9, borderWidth: 1.5 }} /> Refreshing...</>
-              : <>↺ Refresh · {countdown}s</>
+              ? <><div className="sp-spinner" style={{ width: 9, height: 9, borderWidth: 1.5 }} /> {t('status_loading')}…</>
+              : <>↺ {t('btn_refresh')} · {countdown}s</>
             }
           </button>
           {refreshedAt && (
-            <span style={{ fontSize: 8, color: 'var(--dim)' }}>Updated {timeAgo(refreshedAt)}</span>
+            <span style={{ fontSize: 8, color: 'var(--dim)' }}>{t('news_updated')} {timeAgo(refreshedAt)}</span>
           )}
           <Clock />
         </div>
@@ -213,12 +217,12 @@ export default function NewsPage() {
           {loading && articles.length === 0 ? (
             <div className="news-loading">
               <div className="sp-spinner" style={{ width: 20, height: 20 }} />
-              <span>Fetching latest market news...</span>
+              <span>{t('status_loading_news')}</span>
             </div>
           ) : filteredArticles.length === 0 ? (
             <div className="news-loading">
               <div style={{ fontSize: 24, marginBottom: 8 }}>📭</div>
-              <span>No articles found{searchQuery ? ` for "${searchQuery}"` : ''}</span>
+              <span>{t('status_no_news')}</span>
             </div>
           ) : (
             <div className="news-grid">

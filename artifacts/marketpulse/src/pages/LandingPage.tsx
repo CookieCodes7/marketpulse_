@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import LangToggle from '../components/LangToggle';
 import GlobeGL from '../components/GlobeGL';
 
 /* ─────────────────────────────────────────────────────── */
@@ -60,6 +62,7 @@ const VOL_BARS = [14,18,12,22,16,28,20,32,24,28,36,30,38,34,42,38,46,40,44,48];
 /* ─────────────────────────────────────────────────────── */
 
 function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: () => void }) {
+  const { t } = useLanguage();
   const [utcTime, setUtcTime] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const [globeSize, setGlobeSize] = useState(480);
@@ -107,15 +110,13 @@ function GlobeShowcase({ onSignup, onLogin }: { onSignup: () => void; onLogin: (
       {/* Sub-CTAs */}
       <div className="lp-showcase-ctas">
         <button className="lp-showcase-launch" onClick={onSignup}>
-          LAUNCH FREE TERMINAL →
+          {t('btn_launch_terminal')}
         </button>
         <button className="lp-showcase-signin" onClick={onLogin}>
-          SIGN IN
+          {t('btn_sign_in')}
         </button>
       </div>
-      <div className="lp-showcase-tagline">
-        No credit card required · Always free · Built by Team Nexus, Jaipur
-      </div>
+      <div className="lp-showcase-tagline">{t('lp_tagline')}</div>
 
       {/* Globe stage — borderless, flows with background */}
       <div className="lp-globe-window">
@@ -351,6 +352,7 @@ type AuthMode = 'login' | 'signup';
 
 function AuthModal({ onClose, initialMode }: { onClose: () => void; initialMode: AuthMode }) {
   const { login, signup } = useAuth();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [name, setName] = useState('');
@@ -387,39 +389,39 @@ function AuthModal({ onClose, initialMode }: { onClose: () => void; initialMode:
         <button className="lp-modal-close" onClick={onClose}>✕</button>
         <div className="lp-modal-logo">MARKET<span style={{ color: '#3b9eff' }}>PULSE</span></div>
         <div className="lp-modal-tabs">
-          <button className={`lp-modal-tab${mode === 'login' ? ' active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>Login</button>
-          <button className={`lp-modal-tab${mode === 'signup' ? ' active' : ''}`} onClick={() => { setMode('signup'); setError(''); }}>Sign Up</button>
+          <button className={`lp-modal-tab${mode === 'login' ? ' active' : ''}`} onClick={() => { setMode('login'); setError(''); }}>{t('btn_login')}</button>
+          <button className={`lp-modal-tab${mode === 'signup' ? ' active' : ''}`} onClick={() => { setMode('signup'); setError(''); }}>{t('sign_up')}</button>
         </div>
         <form onSubmit={handleSubmit} className="lp-form">
           {mode === 'signup' && (
             <div className="lp-field">
-              <label>Full Name</label>
+              <label>{t('auth_full_name')}</label>
               <input type="text" placeholder="John Doe" value={name} onChange={e => setName(e.target.value)} autoFocus />
             </div>
           )}
           <div className="lp-field">
-            <label>Email Address</label>
+            <label>{t('auth_email')}</label>
             <input type="email" placeholder="trader@example.com" value={email} onChange={e => setEmail(e.target.value)} autoFocus={mode === 'login'} />
           </div>
           <div className="lp-field">
-            <label>Password</label>
+            <label>{t('auth_password')}</label>
             <input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
           </div>
           {mode === 'signup' && (
             <div className="lp-field">
-              <label>Confirm Password</label>
+              <label>{t('auth_password')}</label>
               <input type="password" placeholder="••••••••" value={confirm} onChange={e => setConfirm(e.target.value)} />
             </div>
           )}
           {error && <div className="lp-error">{error}</div>}
           <button type="submit" className="lp-submit-btn" disabled={loading}>
-            {loading ? <span className="lp-spinner" /> : (mode === 'login' ? 'Enter Terminal →' : 'Create Account →')}
+            {loading ? <span className="lp-spinner" /> : (mode === 'login' ? t('auth_launch_terminal') : t('auth_create_account'))}
           </button>
         </form>
         <div className="lp-modal-switch">
           {mode === 'login'
-            ? <>Don't have an account? <button onClick={() => { setMode('signup'); setError(''); }}>Sign up free</button></>
-            : <>Already have an account? <button onClick={() => { setMode('login'); setError(''); }}>Login</button></>}
+            ? <><span>{t('auth_no_account')}</span> <button onClick={() => { setMode('signup'); setError(''); }}>{t('sign_up')}</button></>
+            : <><span>{t('auth_has_account')}</span> <button onClick={() => { setMode('login'); setError(''); }}>{t('btn_login')}</button></>}
         </div>
       </div>
     </div>
@@ -432,6 +434,7 @@ function AuthModal({ onClose, initialMode }: { onClose: () => void; initialMode:
 
 export default function LandingPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [, navigate] = useLocation();
   const [authModal, setAuthModal] = useState<AuthMode | null>(null);
   const animRef = useRef<number>(0);
@@ -467,8 +470,9 @@ export default function LandingPage() {
           <a href="#markets" className="lp-nav-link">Markets</a>
         </div>
         <div className="lp-nav-actions">
-          <button className="lp-btn-ghost" onClick={() => setAuthModal('login')}>Login</button>
-          <button className="lp-btn-primary" onClick={() => setAuthModal('signup')}>Get Started</button>
+          <LangToggle />
+          <button className="lp-btn-ghost" onClick={() => setAuthModal('login')}>{t('btn_login')}</button>
+          <button className="lp-btn-primary" onClick={() => setAuthModal('signup')}>{t('btn_get_started')}</button>
         </div>
       </nav>
 
@@ -487,16 +491,13 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="lp-hero">
-        <div className="lp-hero-badge">◉ LIVE MARKET DATA · AI-POWERED SIGNALS</div>
+        <div className="lp-hero-badge">{t('lp_badge')}</div>
         <h1 className="lp-hero-title">
-          Professional-Grade<br />
-          <span className="lp-hero-accent">Financial Terminal</span><br />
-          for Every Trader
+          {t('lp_hero1')}<br />
+          <span className="lp-hero-accent">{t('lp_hero2')}</span><br />
+          {t('lp_hero3')}
         </h1>
-        <p className="lp-hero-sub">
-          Real-time data from India, USA, China &amp; Japan. AI-generated signals, live news intelligence,
-          portfolio tracking and a global market impact map — all in one terminal.
-        </p>
+        <p className="lp-hero-sub">{t('lp_sub')}</p>
         <div className="lp-hero-markets">
           {['🇮🇳 NSE/BSE', '🇺🇸 NYSE/NASDAQ', '🇨🇳 SSE/SZSE', '🇯🇵 TSE'].map(m => (
             <span key={m} className="lp-hero-market-chip">{m}</span>

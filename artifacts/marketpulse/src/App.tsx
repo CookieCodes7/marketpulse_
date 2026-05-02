@@ -8,6 +8,7 @@ import NewsPage from "@/pages/NewsPage";
 import CommoditiesPage from "@/pages/CommoditiesPage";
 import LandingPage from "@/pages/LandingPage";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -49,11 +50,13 @@ function Router() {
 
 function App() {
   return (
-    <AuthProvider>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-        <Router />
-      </WouterRouter>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+          <Router />
+        </WouterRouter>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }
 

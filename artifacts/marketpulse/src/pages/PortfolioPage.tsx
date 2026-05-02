@@ -4,6 +4,8 @@ import { usePortfolio } from '../hooks/usePortfolio';
 import AllocationChart from '../components/AllocationChart';
 import { searchStocks, StockEntry } from '../data/stockUniverse';
 import Clock from '../components/Clock';
+import { useLanguage } from '../context/LanguageContext';
+import LangToggle from '../components/LangToggle';
 
 const MARKET_META: Record<string, { flag: string; label: string; currency: string; exchange: string }> = {
   IN: { flag: '🇮🇳', label: 'India', currency: '₹', exchange: 'NSE/BSE' },
@@ -62,6 +64,7 @@ interface PortfolioAIReport {
 }
 
 export default function PortfolioPage() {
+  const { t } = useLanguage();
   const { holdings, enriched, quoteStatus, fetchQuotes, addHolding, removeHolding, summary } = usePortfolio();
 
   // ── Add form state ────────────────────────────────────────────
@@ -237,26 +240,27 @@ export default function PortfolioPage() {
         <Link href="/" className="sp-back">← Terminal</Link>
         <Link href="/news" className="sp-back" style={{ borderColor: '#a78bfa44', color: '#a78bfa' }}>📰 News</Link>
         <div className="port-hdr-divider" />
-        <span className="port-title">📊 PORTFOLIO</span>
+        <span className="port-title">📊 {t('port_title').toUpperCase()}</span>
         {/* Tabs */}
         {holdings.length > 0 && (
           <div style={{ display: 'flex', gap: 2, marginLeft: 16 }}>
             <button onClick={() => setActiveTab('holdings')} className={`port-tab${activeTab === 'holdings' ? ' active' : ''}`}>
-              Holdings
+              {t('port_holdings_tab')}
             </button>
             <button onClick={() => { setActiveTab('ai'); if (!aiReport && !aiLoading) runAnalysis(); }} className={`port-tab ai${activeTab === 'ai' ? ' active' : ''}`}>
-              🤖 AI Analysis
+              🤖 {t('port_ai_tab')}
             </button>
           </div>
         )}
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            {quoteStatus === 'loading' && <span style={{ fontSize: 9, color: 'var(--neut)' }}>◌ REFRESHING</span>}
-            {quoteStatus === 'live' && <span style={{ fontSize: 9, color: 'var(--bull)' }}><span className="session-dot" style={{ background: 'var(--bull)' }} />LIVE</span>}
-            {quoteStatus === 'error' && <button onClick={fetchQuotes} style={{ background: 'none', border: 'none', color: 'var(--bear)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font)' }}>⚠ RETRY</button>}
-            {quoteStatus === 'idle' && holdings.length === 0 && <span style={{ fontSize: 9, color: 'var(--muted)' }}>No holdings yet</span>}
+            {quoteStatus === 'loading' && <span style={{ fontSize: 9, color: 'var(--neut)' }}>{t('status_loading')}</span>}
+            {quoteStatus === 'live' && <span style={{ fontSize: 9, color: 'var(--bull)' }}><span className="session-dot" style={{ background: 'var(--bull)' }} />{t('status_live')}</span>}
+            {quoteStatus === 'error' && <button onClick={fetchQuotes} style={{ background: 'none', border: 'none', color: 'var(--bear)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font)' }}>{t('btn_retry')}</button>}
+            {quoteStatus === 'idle' && holdings.length === 0 && <span style={{ fontSize: 9, color: 'var(--muted)' }}>{t('port_empty')}</span>}
           </div>
+          <LangToggle />
           <Clock />
         </div>
       </div>
@@ -265,17 +269,17 @@ export default function PortfolioPage() {
       {holdings.length > 0 && (
         <div className="port-summary">
           <div className="port-sum-item">
-            <span className="port-sum-lbl">Total Value</span>
+            <span className="port-sum-lbl">{t('port_total_value')}</span>
             <span className="port-sum-val" style={{ color: 'var(--text)', fontSize: 15 }}>{fmt(summary.totalValue)}</span>
           </div>
           <div className="port-sum-divider" />
           <div className="port-sum-item">
-            <span className="port-sum-lbl">Invested</span>
+            <span className="port-sum-lbl">{t('port_invested')}</span>
             <span className="port-sum-val">{fmt(summary.totalCost)}</span>
           </div>
           <div className="port-sum-divider" />
           <div className="port-sum-item">
-            <span className="port-sum-lbl">Total P&L</span>
+            <span className="port-sum-lbl">{t('port_total_pnl')}</span>
             <span className="port-sum-val" style={{ color: pnlColor(summary.totalPnl), fontSize: 14 }}>
               {summary.totalPnl >= 0 ? '+' : ''}{fmt(summary.totalPnl)}{' '}
               <span style={{ fontSize: 10 }}>({summary.totalReturn >= 0 ? '+' : ''}{summary.totalReturn.toFixed(2)}%)</span>
@@ -283,14 +287,14 @@ export default function PortfolioPage() {
           </div>
           <div className="port-sum-divider" />
           <div className="port-sum-item">
-            <span className="port-sum-lbl">Today's P&L</span>
+            <span className="port-sum-lbl">{t('port_today_pnl')}</span>
             <span className="port-sum-val" style={{ color: pnlColor(summary.totalDayPnl) }}>
               {summary.totalDayPnl >= 0 ? '+' : ''}{fmt(summary.totalDayPnl)}
             </span>
           </div>
           <div className="port-sum-divider" />
           <div className="port-sum-item">
-            <span className="port-sum-lbl">Holdings</span>
+            <span className="port-sum-lbl">{t('port_holdings_tab')}</span>
             <span className="port-sum-val">{holdings.length} positions</span>
           </div>
           {bestPerformer && (

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'wouter';
 import Clock from '../components/Clock';
 import PriceChart from '../components/PriceChart';
+import { useLanguage } from '../context/LanguageContext';
+import LangToggle from '../components/LangToggle';
 
 interface LiveQuote {
   price: number | null;
@@ -67,6 +69,7 @@ function timeAgo(iso: string | null): string {
 interface NewsItem { title: string; publisher: string; link: string; publishedAt: string | null; relatedTickers: string[] }
 
 export default function CommoditiesPage() {
+  const { t } = useLanguage();
   const [category, setCategory] = useState<Category>('All');
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
   const [quotesLoading, setQuotesLoading] = useState(true);
@@ -133,7 +136,7 @@ export default function CommoditiesPage() {
         <Link href="/portfolio" className="sp-back" style={{ borderColor: '#3b9eff44', color: '#3b9eff' }}>📊 Portfolio</Link>
         <Link href="/news" className="sp-back" style={{ borderColor: '#a78bfa44', color: '#a78bfa' }}>📰 News</Link>
         <div className="sp-hdr-divider" />
-        <span className="cmdty-hdr-title">🏅 COMMODITIES MARKETS</span>
+        <span className="cmdty-hdr-title">🏅 {t('cmdty_title').toUpperCase()}</span>
 
         {/* Category tabs */}
         <div style={{ display: 'flex', gap: 3, marginLeft: 12 }}>
@@ -148,7 +151,7 @@ export default function CommoditiesPage() {
                 color: category === cat ? '#f5c242' : 'var(--muted)',
               }}
             >
-              {cat}
+              {cat === 'All' ? t('cmdty_all') : cat === 'Metals' ? t('cmdty_metals') : t('cmdty_energy')}
               {cat !== 'All' && (
                 <span style={{ fontSize: 8, marginLeft: 4, opacity: 0.7 }}>
                   {catStats[cat as keyof typeof catStats].up}/{catStats[cat as keyof typeof catStats].count} ↑
@@ -159,6 +162,7 @@ export default function CommoditiesPage() {
         </div>
 
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <LangToggle />
           {/* USD / INR currency toggle */}
           <div style={{ display: 'flex', gap: 2, border: '1px solid #f5c24244', borderRadius: 3, overflow: 'hidden' }}>
             <button

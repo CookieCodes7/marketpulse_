@@ -18,6 +18,17 @@ A professional financial terminal built as a pnpm workspace monorepo. Features r
 - **Routing**: Wouter
 - **Font**: IBM Plex Mono
 
+## Internationalization (i18n)
+
+- **Languages**: English (EN) and Hindi (हिं)
+- **Toggle**: `EN | हिं` pill button in every page header — persists to `localStorage` (`mp_lang`)
+- **Translation files**: `src/i18n/translations.ts` — all 120+ UI string keys with EN/HI values
+- **Context**: `src/context/LanguageContext.tsx` — `LanguageProvider` + `useLanguage()` hook returning `{ lang, setLang, t }`
+- **Component**: `src/components/LangToggle.tsx` — drop-in pill toggle
+- **Font**: Noto Sans Devanagari loaded via Google Fonts for correct Devanagari rendering
+- **Coverage**: LandingPage (hero, nav, auth form), Terminal (watchlist, status, geo section, news panel), NewsPage, CommoditiesPage, PortfolioPage (header, summary, tabs), ProfilePanel (all labels, prefs, buttons)
+- **Non-translated**: Stock names, company names, news article titles, AI-generated text, financial data
+
 ## Features
 
 ### Terminal (`/`)
