@@ -544,6 +544,19 @@ export default function Terminal() {
                   </Link>
                 )}
               </div>
+
+              {/* Chart type toggle — inline below Full Screen */}
+              <div style={{ display: 'flex', margin: '4px 0 2px', gap: 0, border: '1px solid #1a2533', borderRadius: 2, overflow: 'hidden', alignSelf: 'flex-start' }}>
+                <button
+                  onClick={() => setChartMode('line')}
+                  style={{ fontFamily: 'var(--font)', fontSize: 8, fontWeight: 700, padding: '2px 9px', cursor: 'pointer', border: 'none', background: chartMode === 'line' ? accentCol + '22' : 'transparent', color: chartMode === 'line' ? accentCol : '#3a5a74', transition: 'all .12s' }}
+                >╱ LINE</button>
+                <button
+                  onClick={() => setChartMode('candle')}
+                  style={{ fontFamily: 'var(--font)', fontSize: 8, fontWeight: 700, padding: '2px 9px', cursor: 'pointer', border: 'none', borderLeft: '1px solid #1a2533', background: chartMode === 'candle' ? '#f5c24222' : 'transparent', color: chartMode === 'candle' ? '#f5c242' : '#3a5a74', transition: 'all .12s' }}
+                >🕯 CANDLE</button>
+              </div>
+
               <div className={`stock-price ${activeStock.chg >= 0 ? 'bull' : 'bear'}`}>
                 {activeStock.price > 0
                   ? fxFmt(activeStock.price)
@@ -554,38 +567,6 @@ export default function Terminal() {
                 <span>VOL: {activeStock.vol}</span>
                 <span>P/E: {activeStock.pe}</span>
               </div>
-            </div>
-          </div>
-
-          {/* Chart type toggle bar — sits on the divider below stock info */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-            padding: '0 8px', height: 22,
-            borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)',
-            background: 'var(--bg2)',
-          }}>
-            <div style={{ display: 'flex', border: '1px solid #1a2533', borderRadius: 2, overflow: 'hidden' }}>
-              <button
-                onClick={() => setChartMode('line')}
-                style={{
-                  fontFamily: 'var(--font)', fontSize: 9, fontWeight: 700,
-                  padding: '1px 10px', cursor: 'pointer', border: 'none',
-                  background: chartMode === 'line' ? accentCol + '22' : 'transparent',
-                  color: chartMode === 'line' ? accentCol : '#3a5a74',
-                  transition: 'all .12s',
-                }}
-              >╱ LINE</button>
-              <button
-                onClick={() => setChartMode('candle')}
-                style={{
-                  fontFamily: 'var(--font)', fontSize: 9, fontWeight: 700,
-                  padding: '1px 10px', cursor: 'pointer', border: 'none',
-                  borderLeft: '1px solid #1a2533',
-                  background: chartMode === 'candle' ? '#f5c24222' : 'transparent',
-                  color: chartMode === 'candle' ? '#f5c242' : '#3a5a74',
-                  transition: 'all .12s',
-                }}
-              >🕯 CANDLE</button>
             </div>
           </div>
 
