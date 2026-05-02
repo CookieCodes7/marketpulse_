@@ -244,6 +244,9 @@ export default function Terminal() {
         <Link href="/" className="mp-logo" style={{ color: accentCol }}>
           MARKET<span style={{ color: '#3b9eff' }}>PULSE</span>
         </Link>
+        <Link href="/portfolio" style={{ fontSize: 9, color: '#3b9eff', background: '#3b9eff18', border: '1px solid #3b9eff44', padding: '2px 10px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
+          📊 Portfolio
+        </Link>
         <div style={{ fontSize: 9, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '2px 8px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
