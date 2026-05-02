@@ -130,6 +130,35 @@ export default function Terminal() {
   const [usdInr, setUsdInr] = useState<number>(83.5);
   const [chartMode, setChartMode] = useState<'line' | 'candle'>('line');
 
+  // ── Geopolitical war news ──────────────────────────────────────────────────
+  const [warNews, setWarNews] = useState<Record<string, { title: string; publisher: string; link: string; publishedAt: string | null }[]>>({});
+  const [warNewsLoading, setWarNewsLoading] = useState(true);
+
+  const WAR_KEYWORDS: Record<string, string[]> = {
+    ME_GAZA:  ['Gaza', 'Israel', 'Hamas', 'Rafah', 'IDF', 'Palestinian', 'Netanyahu', 'West Bank', 'Hezbollah', 'Middle East conflict'],
+    RED_SEA:  ['Houthi', 'Red Sea', 'Yemen', 'shipping', 'Bab-el-Mandeb', 'Maersk', 'container ship', 'tanker', 'freight rate', 'suez'],
+    TW_STRAIT:['Taiwan', 'Taiwan Strait', 'PLA', 'TSMC', 'semiconductor', 'Taipei', 'South China Sea', 'China military'],
+  };
+
+  useEffect(() => {
+    setWarNewsLoading(true);
+    fetch('/api/news?market=ALL&limit=60')
+      .then(r => r.json())
+      .then(data => {
+        const articles: { title: string; publisher: string; link: string; publishedAt: string | null }[] = data.articles ?? [];
+        const result: Record<string, typeof articles> = {};
+        for (const [id, kws] of Object.entries(WAR_KEYWORDS)) {
+          result[id] = articles
+            .filter(a => kws.some(kw => a.title.toLowerCase().includes(kw.toLowerCase())))
+            .slice(0, 2);
+        }
+        setWarNews(result);
+      })
+      .catch(() => {})
+      .finally(() => setWarNewsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Resizable panels ───────────────────────────────────────────────────────
   const [leftWidth, setLeftWidth] = useState(180);
   const [rightWidth, setRightWidth] = useState(220);
@@ -675,6 +704,28 @@ export default function Terminal() {
                     })}
                   </div>
                   <div className="war-summary">{ev.summary}</div>
+
+                  {/* Live news headlines */}
+                  {warNewsLoading ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 7, paddingTop: 7, borderTop: '1px solid var(--border)' }}>
+                      <div className="sp-spinner" style={{ width: 8, height: 8, borderWidth: 1.5 }} />
+                      <span style={{ fontSize: 8, color: 'var(--muted)' }}>Fetching live headlines...</span>
+                    </div>
+                  ) : (warNews[ev.id] ?? []).length > 0 ? (
+                    <div className="war-news-list">
+                      {(warNews[ev.id] ?? []).map((n, i) => (
+                        <a key={i} href={n.link} target="_blank" rel="noopener noreferrer" className="war-news-item">
+                          <span className="war-news-dot" style={{ color: sevCol }}>●</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="war-news-title">{n.title}</div>
+                            <div className="war-news-meta">{n.publisher}{n.publishedAt ? ` · ${Math.max(1, Math.round((Date.now() - new Date(n.publishedAt).getTime()) / 60000))}m ago` : ''}</div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 7, paddingTop: 7, borderTop: '1px solid var(--border)', fontSize: 8, color: 'var(--muted)' }}>No matching headlines at this time</div>
+                  )}
                 </div>
               );
             })}

@@ -184,6 +184,12 @@ body {
 .war-assets { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
 .war-asset-chip { display: flex; align-items: center; border: 1px solid; border-radius: 2px; padding: 2px 7px; font-family: var(--font); }
 .war-summary { font-size: 10px; color: #6a8a9e; line-height: 1.55; }
+.war-news-list { margin-top: 7px; padding-top: 7px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+.war-news-item { display: flex; align-items: flex-start; gap: 5px; text-decoration: none; cursor: pointer; }
+.war-news-item:hover .war-news-title { color: #c9d8e4; }
+.war-news-dot { font-size: 6px; margin-top: 3px; flex-shrink: 0; }
+.war-news-title { font-size: 10px; color: #7fb3d3; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; transition: color .15s; }
+.war-news-meta { font-size: 8px; color: var(--muted); margin-top: 2px; }
 
 /* Clock */
 .clock-text { margin-left: auto; font-size: 11px; color: var(--muted); }
