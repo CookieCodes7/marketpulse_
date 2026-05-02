@@ -378,6 +378,14 @@ export default function Terminal() {
         <Link href="/commodities" className="mp-nav-btn" style={{ color: '#f5c242', background: '#f5c24218', border: '2px solid #f5c24255' }}>
           🏅 Commodities
         </Link>
+
+        {/* Smart stock search — placed prominently beside Commodities */}
+        <StockSearch
+          marketId={activeMarket}
+          onSelect={handleAddStock}
+          placeholder={`Search ${market.name} stocks...`}
+        />
+
         <Link href="/portfolio" className="mp-nav-btn" style={{ color: '#3b9eff', background: '#3b9eff18', border: '2px solid #3b9eff55' }}>
           📊 Portfolio
         </Link>
@@ -387,13 +395,6 @@ export default function Terminal() {
         <div className="mp-market-badge" style={{ fontSize: 12, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '6px 12px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
-
-        {/* Smart stock search */}
-        <StockSearch
-          marketId={activeMarket}
-          onSelect={handleAddStock}
-          placeholder={`Search ${market.name} stocks...`}
-        />
 
         <div className="hdr-stat">
           <span className="lbl">{market.benchmarkLabel}</span>

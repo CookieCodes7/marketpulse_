@@ -80,7 +80,7 @@ export default function StockSearch({ marketId, onSelect, placeholder }: StockSe
   const showDropdown = focused && results.length > 0;
 
   return (
-    <div className="stock-search-wrap" style={{ position: 'relative', flex: 1, maxWidth: 280 }}>
+    <div className="stock-search-wrap" style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 340 }}>
       <div style={{ position: 'relative' }}>
         <span style={{
           position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)',
