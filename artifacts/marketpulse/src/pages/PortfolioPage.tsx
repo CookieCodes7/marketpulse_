@@ -35,6 +35,31 @@ function pnlColor(v: number | null) {
 
 interface NewsItem { title: string; publisher: string; link: string; publishedAt: string | null }
 
+interface HoldingAnalysis {
+  sym: string;
+  action: 'BUY_MORE' | 'HOLD' | 'REDUCE' | 'SELL' | 'WATCH';
+  confidence: number;
+  reasoning: string;
+  risk: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+interface AISuggestion { priority: 'HIGH' | 'MEDIUM' | 'LOW'; title: string; detail: string; }
+interface AIRiskAlert { severity: 'HIGH' | 'MEDIUM' | 'LOW'; message: string; }
+interface PortfolioAIReport {
+  healthScore: number;
+  verdict: string;
+  riskLevel: string;
+  summary: string;
+  holdings: HoldingAnalysis[];
+  suggestions: AISuggestion[];
+  riskAlerts: AIRiskAlert[];
+  diversificationScore: number;
+  sectorExposure: Record<string, number>;
+  marketExposure: Record<string, number>;
+  topOpportunity: string;
+  topRisk: string;
+  generatedAt: string;
+}
+
 export default function PortfolioPage() {
   const { holdings, enriched, quoteStatus, fetchQuotes, addHolding, removeHolding, summary } = usePortfolio();
 
@@ -60,6 +85,40 @@ export default function PortfolioPage() {
   const [editCost, setEditCost] = useState('');
 
   const { updateShares, updateAvgCost } = usePortfolio();
+
+  // ── AI Analysis state ──────────────────────────────────────────
+  const [activeTab, setActiveTab] = useState<'holdings' | 'ai'>('holdings');
+  const [aiReport, setAiReport] = useState<PortfolioAIReport | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const runAnalysis = async () => {
+    if (enriched.length === 0) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await fetch('/api/portfolio/analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          holdings: enriched.map(h => ({
+            sym: h.sym, yahoo: h.yahoo, name: h.name, shares: h.shares,
+            avgCost: h.avgCost, currentPrice: h.currentPrice,
+            currentValue: h.currentValue, costBasis: h.costBasis,
+            pnl: h.pnl, pnlPct: h.pnlPct, changePercent: h.changePercent,
+            dayPnl: h.dayPnl, sector: h.sector, marketId: h.marketId, currency: h.currency,
+          })),
+          summary,
+        }),
+      });
+      if (!res.ok) throw new Error('failed');
+      setAiReport(await res.json() as PortfolioAIReport);
+    } catch {
+      setAiError('Analysis failed. Check your connection and try again.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // Fetch news for top 4 portfolio stocks by value
   const fetchPortfolioNews = useCallback(async () => {
@@ -178,6 +237,18 @@ export default function PortfolioPage() {
         <Link href="/news" className="sp-back" style={{ borderColor: '#a78bfa44', color: '#a78bfa' }}>📰 News</Link>
         <div className="port-hdr-divider" />
         <span className="port-title">📊 PORTFOLIO</span>
+        {/* Tabs */}
+        {holdings.length > 0 && (
+          <div style={{ display: 'flex', gap: 2, marginLeft: 16 }}>
+            <button onClick={() => setActiveTab('holdings')} className={`port-tab${activeTab === 'holdings' ? ' active' : ''}`}>
+              Holdings
+            </button>
+            <button onClick={() => { setActiveTab('ai'); if (!aiReport && !aiLoading) runAnalysis(); }} className={`port-tab ai${activeTab === 'ai' ? ' active' : ''}`}>
+              🤖 AI Analysis
+            </button>
+          </div>
+        )}
+
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {quoteStatus === 'loading' && <span style={{ fontSize: 9, color: 'var(--neut)' }}>◌ REFRESHING</span>}
@@ -249,11 +320,11 @@ export default function PortfolioPage() {
       {/* Body */}
       <div className="port-body">
 
-        {/* LEFT: Add Form + Holdings Table */}
+        {/* LEFT: Add Form + Holdings Table OR AI Analysis */}
         <div className="port-main">
 
-          {/* Add Position Bar */}
-          <div className="port-add-bar">
+          {/* Add Position Bar — only in holdings tab */}
+          {activeTab === 'holdings' && <div className="port-add-bar">
             {!addOpen ? (
               <button onClick={() => { setAddOpen(true); setTimeout(() => searchInputRef.current?.focus(), 100); }} className="port-add-btn">
                 ＋ Add Position
@@ -336,10 +407,215 @@ export default function PortfolioPage() {
                 </button>
               </div>
             )}
-          </div>
+          </div>}
 
-          {/* Holdings Table */}
-          {holdings.length === 0 ? (
+          {/* ── AI ANALYSIS PANEL ─────────────────────────────────── */}
+          {activeTab === 'ai' && (
+            <div className="ai-panel">
+              {aiLoading && (
+                <div className="ai-loading">
+                  <div className="ai-loading-ring" />
+                  <div>
+                    <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 4 }}>Analysing your portfolio...</div>
+                    <div style={{ fontSize: 9, color: 'var(--muted)' }}>Fetching news · Crunching numbers · Consulting the AI</div>
+                  </div>
+                </div>
+              )}
+              {aiError && !aiLoading && (
+                <div className="ai-error-box">
+                  <span>⚠ {aiError}</span>
+                  <button className="ai-regen-btn" onClick={runAnalysis}>Retry</button>
+                </div>
+              )}
+              {!aiLoading && !aiError && !aiReport && (
+                <div className="ai-empty-state">
+                  <div style={{ fontSize: 36, marginBottom: 12 }}>🤖</div>
+                  <div style={{ fontSize: 14, color: 'var(--text)', marginBottom: 6 }}>AI Portfolio Analysis</div>
+                  <div style={{ fontSize: 10, color: 'var(--muted)', maxWidth: 360, lineHeight: 1.7, marginBottom: 20, textAlign: 'center' }}>
+                    Get a full AI-powered report on your holdings — health score, per-stock recommendations, actionable suggestions, and risk alerts — all based on live market data.
+                  </div>
+                  <button className="ai-generate-btn" onClick={runAnalysis} disabled={holdings.length === 0}>
+                    ⚡ Generate Analysis
+                  </button>
+                </div>
+              )}
+              {!aiLoading && aiReport && (() => {
+                const score = aiReport.healthScore ?? 0;
+                const scoreColor = score >= 80 ? '#00c79a' : score >= 60 ? '#3b9eff' : score >= 40 ? '#ff9933' : '#ff4d4f';
+                const divScore = aiReport.diversificationScore ?? 0;
+                const actionColors: Record<string, string> = {
+                  BUY_MORE: '#00c79a', HOLD: '#3b9eff', WATCH: '#f5c242', REDUCE: '#ff9933', SELL: '#ff4d4f',
+                };
+                const riskColors: Record<string, string> = { LOW: '#00c79a', MEDIUM: '#f5c242', HIGH: '#ff4d4f', 'VERY HIGH': '#ff4d4f' };
+                const priorityColors: Record<string, string> = { HIGH: '#ff4d4f', MEDIUM: '#ff9933', LOW: '#3b9eff' };
+                const severityColors: Record<string, string> = { HIGH: '#ff4d4f', MEDIUM: '#ff9933', LOW: '#f5c242' };
+                const timeAgoStr = aiReport.generatedAt ? (() => {
+                  const m = Math.floor((Date.now() - new Date(aiReport.generatedAt).getTime()) / 60000);
+                  return m < 1 ? 'just now' : m < 60 ? `${m}m ago` : Math.floor(m / 60) + 'h ago';
+                })() : '';
+
+                return (
+                  <>
+                    {/* Score Row */}
+                    <div className="ai-score-row">
+                      <div className="ai-score-circle" style={{ borderColor: scoreColor }}>
+                        <span className="ai-score-num" style={{ color: scoreColor }}>{score}</span>
+                        <span className="ai-score-lbl">/ 100</span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ fontSize: 9, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Portfolio Health</div>
+                        <span className="ai-badge" style={{ color: scoreColor, borderColor: scoreColor + '55', background: scoreColor + '15' }}>
+                          {aiReport.verdict}
+                        </span>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <span className="ai-badge" style={{ color: riskColors[aiReport.riskLevel] ?? '#f5c242', borderColor: (riskColors[aiReport.riskLevel] ?? '#f5c242') + '55', background: (riskColors[aiReport.riskLevel] ?? '#f5c242') + '15', fontSize: 8 }}>
+                            Risk: {aiReport.riskLevel}
+                          </span>
+                          <span className="ai-badge" style={{ color: '#a78bfa', borderColor: '#a78bfa55', background: '#a78bfa15', fontSize: 8 }}>
+                            Diversification: {divScore}/100
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {aiReport.topOpportunity && (
+                          <div style={{ fontSize: 9, color: 'var(--muted)' }}>Top opportunity: <span style={{ color: '#00c79a', fontWeight: 700 }}>{aiReport.topOpportunity}</span></div>
+                        )}
+                        {aiReport.topRisk && (
+                          <div style={{ fontSize: 9, color: 'var(--muted)' }}>Watch out for: <span style={{ color: '#ff4d4f', fontWeight: 700 }}>{aiReport.topRisk}</span></div>
+                        )}
+                        {timeAgoStr && <div style={{ fontSize: 8, color: 'var(--dim)', marginTop: 4 }}>Generated {timeAgoStr}</div>}
+                      </div>
+                      <button className="ai-regen-btn" onClick={runAnalysis} disabled={aiLoading}>
+                        ↺ Regenerate
+                      </button>
+                    </div>
+
+                    {/* Summary */}
+                    <div className="ai-summary-box">
+                      <div style={{ fontSize: 8, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 6 }}>AI Portfolio Assessment</div>
+                      <p style={{ margin: 0, fontSize: 10, color: 'var(--text)', lineHeight: 1.7, fontFamily: 'var(--sans)' }}>{aiReport.summary}</p>
+                    </div>
+
+                    {/* Holdings Analysis */}
+                    {(aiReport.holdings ?? []).length > 0 && (
+                      <div className="ai-section">
+                        <div className="ai-section-hdr">Holdings Recommendations</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto auto 1fr', gap: '0 12px', alignItems: 'center' }}>
+                          <span style={{ fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>Symbol</span>
+                          <span style={{ fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>Action</span>
+                          <span style={{ fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>Confidence</span>
+                          <span style={{ fontSize: 7, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 1, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>Analysis</span>
+                          {(aiReport.holdings ?? []).map(h => {
+                            const ac = actionColors[h.action] ?? '#3b9eff';
+                            return [
+                              <div key={h.sym + '-sym'} style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                                <Link href={`/stock/${encodeURIComponent(enriched.find(e => e.sym === h.sym)?.yahoo ?? h.sym)}`}
+                                  style={{ fontWeight: 700, fontSize: 11, color: '#7fb3d3', textDecoration: 'none' }}>
+                                  {h.sym}
+                                </Link>
+                              </div>,
+                              <div key={h.sym + '-act'} style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                                <span className="ai-action-badge" style={{ color: ac, borderColor: ac + '55', background: ac + '18' }}>
+                                  {h.action.replace('_', ' ')}
+                                </span>
+                              </div>,
+                              <div key={h.sym + '-conf'} style={{ padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                  <div style={{ width: 40, height: 3, background: 'var(--dim)', borderRadius: 2 }}>
+                                    <div style={{ width: `${h.confidence ?? 0}%`, height: 3, background: ac, borderRadius: 2 }} />
+                                  </div>
+                                  <span style={{ fontSize: 9, color: 'var(--muted)' }}>{h.confidence ?? 0}%</span>
+                                </div>
+                              </div>,
+                              <div key={h.sym + '-rsn'} style={{ padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 9, color: 'var(--text)', fontFamily: 'var(--sans)', lineHeight: 1.5 }}>
+                                {h.reasoning}
+                              </div>,
+                            ];
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Suggestions */}
+                    {(aiReport.suggestions ?? []).length > 0 && (
+                      <div className="ai-section">
+                        <div className="ai-section-hdr">Key Suggestions</div>
+                        {(aiReport.suggestions ?? []).map((s, i) => {
+                          const pc = priorityColors[s.priority] ?? '#3b9eff';
+                          return (
+                            <div key={i} className="ai-suggestion">
+                              <span className="ai-priority-dot" style={{ background: pc }} />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text)' }}>{s.title}</span>
+                                  <span style={{ fontSize: 7, color: pc, border: `1px solid ${pc}44`, padding: '1px 5px', fontWeight: 700 }}>{s.priority}</span>
+                                </div>
+                                <div style={{ fontSize: 9, color: 'var(--muted)', fontFamily: 'var(--sans)', lineHeight: 1.5 }}>{s.detail}</div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Risk Alerts */}
+                    {(aiReport.riskAlerts ?? []).length > 0 && (
+                      <div className="ai-section">
+                        <div className="ai-section-hdr">Risk Alerts</div>
+                        {(aiReport.riskAlerts ?? []).map((a, i) => {
+                          const sc = severityColors[a.severity] ?? '#f5c242';
+                          return (
+                            <div key={i} className="ai-alert" style={{ borderColor: sc }}>
+                              <span style={{ fontSize: 12, marginTop: -1 }}>⚠</span>
+                              <div style={{ flex: 1 }}>
+                                <span style={{ fontSize: 8, color: sc, fontWeight: 700, marginRight: 6 }}>{a.severity}</span>
+                                <span style={{ fontSize: 9, color: 'var(--text)', fontFamily: 'var(--sans)' }}>{a.message}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Exposure Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      {Object.keys(aiReport.sectorExposure ?? {}).length > 0 && (
+                        <div className="ai-section">
+                          <div className="ai-section-hdr">Sector Exposure</div>
+                          {Object.entries(aiReport.sectorExposure ?? {}).sort((a,b)=>b[1]-a[1]).map(([s, v]) => (
+                            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                              <span style={{ fontSize: 9, color: 'var(--text)', minWidth: 90, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s}</span>
+                              <div style={{ flex: 1, background: 'var(--dim)', height: 4, borderRadius: 2 }}>
+                                <div style={{ width: `${Math.min(100, v)}%`, height: 4, background: '#a78bfa', borderRadius: 2 }} />
+                              </div>
+                              <span style={{ fontSize: 9, color: 'var(--muted)', minWidth: 32, textAlign: 'right' }}>{v}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {Object.keys(aiReport.marketExposure ?? {}).length > 0 && (
+                        <div className="ai-section">
+                          <div className="ai-section-hdr">Market Exposure</div>
+                          {Object.entries(aiReport.marketExposure ?? {}).sort((a,b)=>b[1]-a[1]).map(([m, v]) => (
+                            <div key={m} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                              <span style={{ fontSize: 9, color: 'var(--text)', minWidth: 30 }}>{MARKET_META[m]?.flag} {MARKET_META[m]?.label ?? m}</span>
+                              <div style={{ flex: 1, background: 'var(--dim)', height: 4, borderRadius: 2 }}>
+                                <div style={{ width: `${Math.min(100, v)}%`, height: 4, background: '#3b9eff', borderRadius: 2 }} />
+                              </div>
+                              <span style={{ fontSize: 9, color: 'var(--muted)', minWidth: 32, textAlign: 'right' }}>{v}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ── HOLDINGS TABLE (only in holdings tab) ─────────────── */}
+          {activeTab === 'holdings' && (holdings.length === 0 ? (
             <div className="port-empty">
               <div style={{ fontSize: 32, marginBottom: 12 }}>📊</div>
               <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 6 }}>Your portfolio is empty</div>
@@ -489,7 +765,7 @@ export default function PortfolioPage() {
                 )}
               </table>
             </div>
-          )}
+          ))}
         </div>
 
         {/* RIGHT: Sidebar */}
