@@ -350,15 +350,64 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Team Section */}
+      <section className="lp-team-section">
+        <div className="lp-team-badge">BUILT BY</div>
+        <h2 className="lp-team-title">
+          TEAM <span className="lp-team-accent">NEXUS</span>
+        </h2>
+        <p className="lp-team-sub">
+          A passionate team of engineers, designers, and market analysts on a mission to<br />
+          democratize professional-grade financial intelligence.
+        </p>
+
+        <div className="lp-team-cards">
+          <div className="lp-team-card">
+            <div className="lp-team-card-icon">📍</div>
+            <div className="lp-team-card-label">LOCATION</div>
+            <div className="lp-team-card-value">Jaipur, Rajasthan, India</div>
+          </div>
+          <div className="lp-team-card">
+            <div className="lp-team-card-icon">✉️</div>
+            <div className="lp-team-card-label">CONTACT</div>
+            <div className="lp-team-card-value">
+              <a href="mailto:hiteshh7877@gmail.com" className="lp-team-email">hiteshh7877@gmail.com</a>
+            </div>
+          </div>
+          <div className="lp-team-card">
+            <div className="lp-team-card-icon">✉️</div>
+            <div className="lp-team-card-label">CONTACT</div>
+            <div className="lp-team-card-value">
+              <a href="mailto:architgarg2021@gmail.com" className="lp-team-email">architgarg2021@gmail.com</a>
+            </div>
+          </div>
+        </div>
+
+        <div className="lp-team-strip">
+          <span className="lp-team-dot" style={{ background: '#00ff9c' }} />
+          <span className="lp-team-dot" style={{ background: '#f5c842' }} />
+          <span className="lp-team-dot" style={{ background: '#a78bfa' }} />
+          <span className="lp-team-dot" style={{ background: '#ff4d4f' }} />
+          <span className="lp-team-strip-text">TEAM NEXUS · JAIPUR, INDIA · 2025</span>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="lp-footer">
-        <div className="lp-footer-logo">MARKET<span style={{ color: '#3b9eff' }}>PULSE</span></div>
-        <div className="lp-footer-text">Professional Financial Terminal · Real-Time Data · AI Signals</div>
-        <div className="lp-footer-markets">
-          <span>🇮🇳 India (NSE/BSE)</span>
-          <span>🇺🇸 USA (NYSE/NASDAQ)</span>
-          <span>🇨🇳 China (SSE/SZSE)</span>
-          <span>🇯🇵 Japan (TSE)</span>
+      <footer className="lp-footer-bar">
+        <div className="lp-footer-left">
+          <span className="lp-footer-bar-logo">MARKET<span style={{ color: '#3b9eff' }}>PULSE</span></span>
+          <span className="lp-footer-sep">·</span>
+          <span className="lp-footer-bar-sub">Built by Team Nexus, Jaipur</span>
+        </div>
+        <div className="lp-footer-links">
+          <a href="#" className="lp-footer-link">TERMS</a>
+          <a href="#" className="lp-footer-link">PRIVACY</a>
+          <a href="#" className="lp-footer-link">STATUS</a>
+          <a href="#" className="lp-footer-link">API</a>
+        </div>
+        <div className="lp-footer-status">
+          <span className="lp-status-dot" />
+          ALL SYSTEMS OPERATIONAL
         </div>
       </footer>
 
