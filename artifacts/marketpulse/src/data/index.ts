@@ -318,6 +318,81 @@ const COMMODITIES: Market = {
 export const MARKETS: Record<string, Market> = { IN: INDIA, US: USA, CN: CHINA, JP: JAPAN, CMDTY: COMMODITIES };
 export const MARKET_ORDER = ['IN', 'US', 'CN', 'JP', 'CMDTY'];
 
+export type WarAsset = { sym: string; dir: 1 | -1; pct: string };
+export type WarEvent = {
+  id: string;
+  event: string;
+  region: string;
+  flag: string;
+  severity: 'HIGH' | 'MED' | 'LOW';
+  assets: WarAsset[];
+  summary: string;
+  updated: string;
+};
+
+export const WAR_EVENTS: WarEvent[] = [
+  {
+    id: 'IN_PK',
+    event: 'India–Pakistan Escalation',
+    region: 'South Asia · LOC',
+    flag: '🇮🇳🇵🇰',
+    severity: 'HIGH',
+    assets: [
+      { sym: 'NIFTY 50', dir: -1, pct: '-2.8%' },
+      { sym: 'INR/USD', dir: -1, pct: '-1.6%' },
+      { sym: 'GOLD', dir: 1, pct: '+3.9%' },
+      { sym: 'DEF ETF', dir: 1, pct: '+4.2%' },
+    ],
+    summary: 'Border escalation triggers risk-off in Indian equities. Defence names and gold surge on safe-haven demand. INR under pressure as FIIs pare positions.',
+    updated: '18m ago',
+  },
+  {
+    id: 'RU_UA',
+    event: 'Russia–Ukraine War',
+    region: 'Eastern Europe',
+    flag: '🇷🇺🇺🇦',
+    severity: 'HIGH',
+    assets: [
+      { sym: 'WHEAT', dir: 1, pct: '+18.4%' },
+      { sym: 'NAT GAS', dir: 1, pct: '+22.1%' },
+      { sym: 'OIL BRENT', dir: 1, pct: '+11.3%' },
+      { sym: 'GOLD', dir: 1, pct: '+8.7%' },
+    ],
+    summary: 'Black Sea grain corridor disruptions drive wheat premium. European gas supply risk keeps energy elevated. Safe-haven flows sustain gold at multi-year highs.',
+    updated: '2h ago',
+  },
+  {
+    id: 'ME_CONFLICT',
+    event: 'Middle East Conflict',
+    region: 'Israel · Gaza · Lebanon',
+    flag: '🇮🇱🇱🇧',
+    severity: 'HIGH',
+    assets: [
+      { sym: 'OIL WTI', dir: 1, pct: '+6.2%' },
+      { sym: 'GOLD', dir: 1, pct: '+5.4%' },
+      { sym: 'SILVER', dir: 1, pct: '+3.1%' },
+      { sym: 'US TREAS', dir: 1, pct: '+1.8%' },
+    ],
+    summary: 'Strait of Hormuz risk premium keeps crude elevated. Safe-haven flows into gold, silver, and US Treasuries as conflict spreads toward Lebanon border.',
+    updated: '45m ago',
+  },
+  {
+    id: 'TW_STRAIT',
+    event: 'Taiwan Strait Tension',
+    region: 'Taiwan · China · USA',
+    flag: '🇹🇼🇨🇳',
+    severity: 'MED',
+    assets: [
+      { sym: 'SEMIS', dir: -1, pct: '-4.8%' },
+      { sym: 'TSMC', dir: -1, pct: '-6.1%' },
+      { sym: 'GOLD', dir: 1, pct: '+2.9%' },
+      { sym: 'USD/TWD', dir: 1, pct: '+1.3%' },
+    ],
+    summary: 'TSMC supply chain risk drives semiconductor sector volatility. PLA naval exercises near strait elevate geopolitical premium across Asia-Pacific markets.',
+    updated: '1h ago',
+  },
+];
+
 export const COUNTRY_DATA: Record<number, {
   name: string; score: number; sig: string; sector: string; trend: string;
   headlines: string[]; ai: string;

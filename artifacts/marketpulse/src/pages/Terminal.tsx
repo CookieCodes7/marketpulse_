@@ -7,7 +7,7 @@ import Clock from '../components/Clock';
 import MarketSwitcher from '../components/MarketSwitcher';
 import StockSearch from '../components/StockSearch';
 import { useIsMobile } from '../hooks/use-mobile';
-import { MARKETS, COUNTRY_DATA, Stock } from '../data';
+import { MARKETS, COUNTRY_DATA, WAR_EVENTS, Stock } from '../data';
 import { useRealTimeQuotes, QuoteResult, DEFAULT_YAHOO_SYMBOLS } from '../hooks/useRealTimeQuotes';
 import { StockEntry } from '../data/stockUniverse';
 
@@ -620,7 +620,7 @@ export default function Terminal() {
               <span>Global Market Impact Map</span>
               <Link href="/map" className="map-link-btn">⊞ Full Screen</Link>
             </div>
-            <WorldMap height={220} onCountryClick={handleCountryClick} />
+            <WorldMap height={320} onCountryClick={handleCountryClick} />
           </div>
 
           {/* Country Panel */}
@@ -644,18 +644,37 @@ export default function Terminal() {
             </div>
           )}
 
-          {/* Correlation */}
-          <div style={{ padding: 8, flexShrink: 0 }}>
-            <div className="panel-hdr" style={{ marginBottom: 4 }}>News → Stock Correlation · {market.flag} {market.name}</div>
-            {market.corr.map(c => {
-              const abs = Math.abs(c.score);
-              const ccol = c.dir >= 0 ? 'var(--bull)' : 'var(--bear)';
+          {/* War / Geopolitical News Effect */}
+          <div className="war-section">
+            <div className="war-hdr">
+              <span className="war-hdr-title">⚔ Geopolitical Risk · Market Impact</span>
+              <span className="war-hdr-sub">Live conflict monitoring</span>
+            </div>
+            {WAR_EVENTS.map(ev => {
+              const sevCol = ev.severity === 'HIGH' ? '#ff4d4f' : ev.severity === 'MED' ? '#f5c242' : '#5a7a94';
               return (
-                <div key={c.sym} className="corr-item">
-                  <span className="corr-sym">{c.sym.split('.')[0]}</span>
-                  <div className="corr-bar-wrap"><div className="corr-bar" style={{ width: `${(abs * 100).toFixed(0)}%`, background: ccol }} /></div>
-                  <span className="corr-val" style={{ color: ccol }}>{c.score > 0 ? '+' : ''}{c.score.toFixed(2)}</span>
-                  <span className="corr-mentions">{(c.mentions / 1000).toFixed(1)}K ments</span>
+                <div key={ev.id} className="war-card">
+                  <div className="war-card-hdr">
+                    <span className="war-flag">{ev.flag}</span>
+                    <div className="war-card-titles">
+                      <span className="war-event">{ev.event}</span>
+                      <span className="war-region">{ev.region}</span>
+                    </div>
+                    <span className="war-sev" style={{ color: sevCol, borderColor: sevCol + '55', background: sevCol + '11' }}>{ev.severity}</span>
+                    <span className="war-updated">{ev.updated}</span>
+                  </div>
+                  <div className="war-assets">
+                    {ev.assets.map(a => {
+                      const acol = a.dir === 1 ? 'var(--bull)' : 'var(--bear)';
+                      return (
+                        <div key={a.sym} className="war-asset-chip" style={{ borderColor: acol + '44', background: acol + '0d' }}>
+                          <span style={{ color: '#7fb3d3', fontSize: 9, fontWeight: 700 }}>{a.sym}</span>
+                          <span style={{ color: acol, fontSize: 9, fontWeight: 700, marginLeft: 4 }}>{a.pct}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="war-summary">{ev.summary}</div>
                 </div>
               );
             })}
