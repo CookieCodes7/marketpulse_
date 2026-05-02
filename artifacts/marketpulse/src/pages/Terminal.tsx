@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link } from 'wouter';
 import SparkChart from '../components/SparkChart';
 import WorldMap from '../components/WorldMap';
 import Clock from '../components/Clock';
 import MarketSwitcher from '../components/MarketSwitcher';
+import StockSearch from '../components/StockSearch';
 import { MARKETS, COUNTRY_DATA, Stock } from '../data';
-import { useRealTimeQuotes, QuoteResult } from '../hooks/useRealTimeQuotes';
+import { useRealTimeQuotes, QuoteResult, DEFAULT_YAHOO_SYMBOLS } from '../hooks/useRealTimeQuotes';
+import { StockEntry } from '../data/stockUniverse';
 
 function getSignalColor(sig: string) {
   return sig === 'BULL' ? 'var(--bull)' : sig === 'BEAR' ? 'var(--bear)' : 'var(--neut)';
@@ -21,10 +23,7 @@ function getSentColor(sent: string) {
 }
 
 const MARKET_ACCENT: Record<string, string> = {
-  IN: '#ff9933',
-  US: '#3b9eff',
-  CN: '#ff4d4f',
-  JP: '#ff6b6b',
+  IN: '#ff9933', US: '#3b9eff', CN: '#ff4d4f', JP: '#ff6b6b',
 };
 
 function fmtVol(v: number | null): string {
@@ -35,16 +34,32 @@ function fmtVol(v: number | null): string {
   return String(v);
 }
 
-function fmtIdx(v: number | null): string {
-  if (v === null) return '—';
-  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function makeDefaultStocks(mId: string): Stock[] {
+  return MARKETS[mId].stocks.map(s => ({ ...s }));
+}
+
+function makeDefaultWatchlist(): Record<string, Record<string, string>> {
+  const result: Record<string, Record<string, string>> = {};
+  for (const [mId, syms] of Object.entries(DEFAULT_YAHOO_SYMBOLS)) {
+    result[mId] = { ...syms };
+  }
+  return result;
 }
 
 export default function Terminal() {
+  // ── State ──────────────────────────────────────────────────────────────────
   const [activeMarket, setActiveMarket] = useState('IN');
+
+  // stocksByMarket: marketId → Stock[]
   const [stocksByMarket, setStocksByMarket] = useState<Record<string, Stock[]>>(() =>
-    Object.fromEntries(Object.entries(MARKETS).map(([id, m]) => [id, m.stocks.map(s => ({ ...s }))]))
+    ({ IN: makeDefaultStocks('IN'), US: makeDefaultStocks('US'), CN: makeDefaultStocks('CN'), JP: makeDefaultStocks('JP') })
   );
+
+  // watchlistSymbols: marketId → { ourSym: yahooSym }
+  const [watchlistSymbols, setWatchlistSymbols] = useState<Record<string, Record<string, string>>>(
+    makeDefaultWatchlist
+  );
+
   const [activeIdxByMarket, setActiveIdxByMarket] = useState<Record<string, number>>({ IN: 0, US: 0, CN: 0, JP: 0 });
   const [liveQuotes, setLiveQuotes] = useState<Record<string, QuoteResult>>({});
   const [liveIndices, setLiveIndices] = useState<Record<string, QuoteResult>>({});
@@ -52,20 +67,31 @@ export default function Terminal() {
   const [selectedCountry, setSelectedCountry] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
+  // ── Derived ────────────────────────────────────────────────────────────────
   const market = MARKETS[activeMarket];
   const stocks = stocksByMarket[activeMarket];
-  const activeIdx = activeIdxByMarket[activeMarket];
-  const activeStock = stocks[activeIdx];
+  const activeIdx = Math.min(activeIdxByMarket[activeMarket], stocks.length - 1);
+  const activeStock = stocks[activeIdx] ?? stocks[0];
   const accentCol = MARKET_ACCENT[activeMarket];
 
-  // Real-time quote update handler
+  // Flat watchlist symbol map for the hook: "marketId:ourSym" → yahooSym
+  const flatWatchlist = useMemo(() => {
+    const flat: Record<string, string> = {};
+    for (const [mId, syms] of Object.entries(watchlistSymbols)) {
+      for (const [ourSym, yahooSym] of Object.entries(syms)) {
+        flat[`${mId}:${ourSym}`] = yahooSym;
+      }
+    }
+    return flat;
+  }, [watchlistSymbols]);
+
+  // ── Real-time quote update handler ─────────────────────────────────────────
   const handleQuoteUpdate = useCallback(
     (stockMap: Record<string, QuoteResult>, indexMap: Record<string, QuoteResult>) => {
       setLiveQuotes(stockMap);
       setLiveIndices(indexMap);
       setQuoteStatus('live');
 
-      // Merge real prices into stock state
       setStocksByMarket(prev => {
         const next: Record<string, Stock[]> = {};
         for (const [mId, mStocks] of Object.entries(prev)) {
@@ -88,9 +114,9 @@ export default function Terminal() {
     []
   );
 
-  const refetch = useRealTimeQuotes(handleQuoteUpdate, 45000);
+  const refetch = useRealTimeQuotes(flatWatchlist, handleQuoteUpdate, 45000);
 
-  // Handle fetch errors after 10s of no data
+  // Error timer — if no data after 12s, show retry
   const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     errorTimerRef.current = setTimeout(() => {
@@ -99,49 +125,93 @@ export default function Terminal() {
     return () => { if (errorTimerRef.current) clearTimeout(errorTimerRef.current); };
   }, []);
 
-  const handleMarketChange = (id: string) => {
-    setActiveMarket(id);
-    setSelectedCountry(null);
-  };
+  const handleCountryClick = useCallback((id: number) => setSelectedCountry(id), []);
 
-  const addTicker = () => {
-    const sym = prompt('Enter ticker symbol:');
-    if (!sym) return;
+  // ── Add stock from search ──────────────────────────────────────────────────
+  const handleAddStock = useCallback((entry: StockEntry) => {
+    const mId = activeMarket;
+
+    // Don't add duplicate
+    if (watchlistSymbols[mId]?.[entry.sym]) {
+      // If already in list, just select it
+      setStocksByMarket(prev => {
+        const idx = prev[mId].findIndex(s => s.sym === entry.sym);
+        if (idx >= 0) setActiveIdxByMarket(p => ({ ...p, [mId]: idx }));
+        return prev;
+      });
+      return;
+    }
+
+    // Build new Stock entry with placeholder price (will be updated on next fetch)
     const newStock: Stock = {
-      sym: sym.toUpperCase(), name: 'Custom',
-      price: +(100 + Math.random() * 4000).toFixed(2),
-      chg: +(Math.random() * 10 - 5).toFixed(2),
-      chgP: +(Math.random() * 5 - 2.5).toFixed(2),
-      sig: ['BULL', 'BEAR', 'NEUT'][Math.floor(Math.random() * 3)],
-      conf: 40 + Math.floor(Math.random() * 50),
-      target: 100 + Math.floor(Math.random() * 4000),
-      days: 5, vol: '5.2M', pe: '22.1',
+      sym: entry.sym,
+      name: entry.name,
+      price: 0,
+      chg: 0,
+      chgP: 0,
+      sig: 'NEUT',
+      conf: 50,
+      target: 0,
+      days: 7,
+      vol: '—',
+      pe: '—',
     };
-    setStocksByMarket(prev => ({ ...prev, [activeMarket]: [...prev[activeMarket], newStock] }));
-  };
 
-  const handleCountryClick = useCallback((id: number) => {
-    setSelectedCountry(id);
-  }, []);
+    // Add to stocks list
+    setStocksByMarket(prev => {
+      const updated = [...prev[mId], newStock];
+      return { ...prev, [mId]: updated };
+    });
 
+    // Register yahoo symbol for live fetching
+    setWatchlistSymbols(prev => ({
+      ...prev,
+      [mId]: { ...prev[mId], [entry.sym]: entry.yahoo },
+    }));
+
+    // Select the newly added stock
+    setStocksByMarket(prev => {
+      const newIdx = prev[mId].length; // will be appended at this index
+      setActiveIdxByMarket(p => ({ ...p, [mId]: newIdx }));
+      return prev;
+    });
+
+    // Immediately fetch the price for this symbol
+    setTimeout(() => refetch(), 100);
+  }, [activeMarket, watchlistSymbols, refetch]);
+
+  // ── Remove stock from watchlist ───────────────────────────────────────────
+  const handleRemoveStock = useCallback((sym: string, idx: number) => {
+    const mId = activeMarket;
+    setStocksByMarket(prev => {
+      const updated = prev[mId].filter((_, i) => i !== idx);
+      return { ...prev, [mId]: updated };
+    });
+    setWatchlistSymbols(prev => {
+      const { [sym]: _removed, ...rest } = prev[mId];
+      return { ...prev, [mId]: rest };
+    });
+    setActiveIdxByMarket(prev => ({
+      ...prev,
+      [mId]: Math.max(0, Math.min(prev[mId], idx - 1)),
+    }));
+  }, [activeMarket]);
+
+  // ── Derived display values ─────────────────────────────────────────────────
   const country = selectedCountry ? COUNTRY_DATA[selectedCountry] : null;
   const countryCol = country ? getSignalColor(country.sig) : 'var(--bull)';
-  const upside = ((activeStock.target - activeStock.price) / activeStock.price * 100).toFixed(1);
   const col = getSignalColor(activeStock.sig);
+  const upside = activeStock.target > 0
+    ? ((activeStock.target - activeStock.price) / activeStock.price * 100).toFixed(1)
+    : '—';
 
-  // Build live index rows for active market
+  // Live index rows
   const liveIdxRows = market.indices.map((idx, i) => {
     const q = liveIndices[`${activeMarket}:${i}`];
     if (!q || q.price === null) return idx;
     const dir = (q.change ?? 0) >= 0 ? 1 : -1;
-    const chgSign = dir >= 0 ? '+' : '';
-    return {
-      ...idx,
-      val: fmtIdx(q.price),
-      chg: `${chgSign}${(q.change ?? 0).toFixed(2)}`,
-      chgP: `${chgSign}${(q.changePercent ?? 0).toFixed(2)}%`,
-      dir,
-    };
+    const s = dir >= 0 ? '+' : '';
+    return { ...idx, val: q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), chg: `${s}${(q.change ?? 0).toFixed(2)}`, chgP: `${s}${(q.changePercent ?? 0).toFixed(2)}%`, dir };
   });
 
   return (
@@ -153,7 +223,7 @@ export default function Terminal() {
           {[...stocks, ...stocks].map((s, i) => (
             <span key={i} className="tick-item">
               <span className="tick-sym">{s.sym.split('.')[0]}</span>
-              <span className="tick-price">{s.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span className="tick-price">{s.price > 0 ? s.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}</span>
               <span className={s.chg >= 0 ? 'tick-chg-up' : 'tick-chg-dn'}>
                 {s.chg >= 0 ? '+' : ''}{Math.abs(s.chgP).toFixed(2)}%
               </span>
@@ -163,31 +233,31 @@ export default function Terminal() {
       </div>
 
       {/* Market Switcher */}
-      <MarketSwitcher activeMarket={activeMarket} onChange={handleMarketChange} liveIndices={liveIndices} />
+      <MarketSwitcher
+        activeMarket={activeMarket}
+        onChange={id => { setActiveMarket(id); setSelectedCountry(null); }}
+        liveIndices={liveIndices}
+      />
 
       {/* Header */}
       <div className="mp-header">
         <Link href="/" className="mp-logo" style={{ color: accentCol }}>
           MARKET<span style={{ color: '#3b9eff' }}>PULSE</span>
         </Link>
-        <div style={{
-          fontSize: 9,
-          color: accentCol,
-          background: accentCol + '18',
-          border: `1px solid ${accentCol}44`,
-          padding: '2px 8px',
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          whiteSpace: 'nowrap',
-        }}>
+        <div style={{ fontSize: 9, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '2px 8px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
-        <input className="mp-search" type="text" placeholder={`Search ${market.name} ticker...`} />
+
+        {/* Smart stock search */}
+        <StockSearch
+          marketId={activeMarket}
+          onSelect={handleAddStock}
+          placeholder={`Search ${market.name} stocks...`}
+        />
+
         <div className="hdr-stat">
           <span className="lbl">{market.benchmarkLabel}</span>
-          <span className="val" style={{ color: accentCol }}>
-            {liveIdxRows[0]?.val || market.benchmarkVal}
-          </span>
+          <span className="val" style={{ color: accentCol }}>{liveIdxRows[0]?.val || market.benchmarkVal}</span>
         </div>
         <div className="hdr-stat">
           <span className="lbl">{market.vixLabel}</span>
@@ -197,18 +267,8 @@ export default function Terminal() {
           <span className="lbl">Data</span>
           <span className="val">
             {quoteStatus === 'loading' && <span style={{ color: 'var(--neut)' }}>◌ LOADING</span>}
-            {quoteStatus === 'live' && (
-              <span style={{ color: 'var(--bull)' }}>
-                <span className="session-dot" style={{ background: 'var(--bull)' }} />LIVE
-              </span>
-            )}
-            {quoteStatus === 'error' && (
-              <span
-                style={{ color: 'var(--bear)', cursor: 'pointer' }}
-                title="Click to retry"
-                onClick={() => { setQuoteStatus('loading'); refetch(); }}
-              >⚠ RETRY</span>
-            )}
+            {quoteStatus === 'live' && <span style={{ color: 'var(--bull)' }}><span className="session-dot" style={{ background: 'var(--bull)' }} />LIVE</span>}
+            {quoteStatus === 'error' && <span style={{ color: 'var(--bear)', cursor: 'pointer' }} onClick={() => { setQuoteStatus('loading'); refetch(); }}>⚠ RETRY</span>}
           </span>
         </div>
         <Clock />
@@ -216,15 +276,16 @@ export default function Terminal() {
 
       {/* Main */}
       <div className="mp-main">
+
         {/* LEFT: Watchlist */}
         <div className="mp-left">
           <div className="panel-hdr">
             {market.flag} Watchlist
-            <button onClick={addTicker}>+ ADD</button>
+            <span style={{ fontSize: 8, color: 'var(--muted)' }}>{stocks.length} stocks</span>
           </div>
           {stocks.map((s, i) => {
             const q = liveQuotes[`${activeMarket}:${s.sym}`];
-            const price = q?.price ?? s.price;
+            const price = (q?.price ?? s.price);
             const chgP = q?.changePercent ?? s.chgP;
             const chg = q?.change ?? s.chg;
             return (
@@ -234,23 +295,33 @@ export default function Terminal() {
                 style={i === activeIdx ? { borderLeftColor: accentCol } : undefined}
                 onClick={() => setActiveIdxByMarket(prev => ({ ...prev, [activeMarket]: i }))}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span className="w-sym" style={{ color: i === activeIdx ? accentCol : '#7fb3d3' }}>
                     {s.sym.split('.')[0]}
                   </span>
-                  <span className={chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 12, fontWeight: 500 }}>
-                    {market.currency}{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    <span className={chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 11, fontWeight: 500 }}>
+                      {price > 0 ? `${market.currency}${price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '...'}
+                    </span>
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRemoveStock(s.sym, i); }}
+                      title="Remove from watchlist"
+                      style={{ background: 'none', border: 'none', color: '#2a3a4a', cursor: 'pointer', fontSize: 10, padding: '0 2px', lineHeight: 1, display: i === activeIdx ? 'block' : 'none' }}
+                    >✕</button>
+                  </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
                   <span className="w-name">{s.name.substring(0, 14)}</span>
                   <span className={chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 10 }}>
-                    {chg >= 0 ? '+' : ''}{chgP.toFixed(2)}%
+                    {price > 0 ? `${chg >= 0 ? '+' : ''}${chgP.toFixed(2)}%` : ''}
                   </span>
                 </div>
               </div>
             );
           })}
+          <div style={{ padding: '6px 10px', fontSize: 9, color: 'var(--muted)', borderTop: '1px solid var(--border)', marginTop: 'auto' }}>
+            Search above to add more stocks
+          </div>
         </div>
 
         {/* CENTER */}
@@ -272,17 +343,15 @@ export default function Terminal() {
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
                 <span className="stock-sym" style={{ color: accentCol }}>{activeStock.sym.split('.')[0]}</span>
                 <span className="stock-name">{activeStock.name}</span>
-                <span style={{ fontSize: 8, color: '#5a7a94', background: accentCol + '18', padding: '1px 6px', border: `1px solid ${accentCol}33` }}>
-                  {market.exchange}
-                </span>
-                {quoteStatus === 'live' && (
-                  <span style={{ fontSize: 8, color: 'var(--bull)', background: '#00ff9c11', padding: '1px 6px', border: '1px solid #00ff9c33' }}>
-                    ● LIVE DATA
-                  </span>
+                <span style={{ fontSize: 8, color: '#5a7a94', background: accentCol + '18', padding: '1px 6px', border: `1px solid ${accentCol}33` }}>{market.exchange}</span>
+                {quoteStatus === 'live' && activeStock.price > 0 && (
+                  <span style={{ fontSize: 8, color: 'var(--bull)', background: '#00ff9c11', padding: '1px 6px', border: '1px solid #00ff9c33' }}>● LIVE</span>
                 )}
               </div>
               <div className={`stock-price ${activeStock.chg >= 0 ? 'bull' : 'bear'}`}>
-                {market.currency}{activeStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {activeStock.price > 0
+                  ? `${market.currency}${activeStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                  : <span style={{ color: 'var(--muted)', fontSize: 16 }}>Loading...</span>}
               </div>
               <div className="stock-meta">
                 <span>CHG: <b className={activeStock.chg >= 0 ? 'bull' : 'bear'}>{activeStock.chg >= 0 ? '+' : ''}{activeStock.chg.toFixed(2)} ({activeStock.chg >= 0 ? '+' : ''}{activeStock.chgP.toFixed(2)}%)</b></span>
@@ -292,7 +361,6 @@ export default function Terminal() {
             </div>
           </div>
 
-          {/* Spark Chart */}
           <SparkChart stock={activeStock} />
 
           {/* AI Panel */}
@@ -308,29 +376,25 @@ export default function Terminal() {
             <div className="signal-card">
               <div className="signal-label">Target Price</div>
               <div className="signal-val" style={{ color: col }}>
-                {market.currency}{activeStock.target.toLocaleString('en-IN')}
+                {activeStock.target > 0 ? `${market.currency}${activeStock.target.toLocaleString('en-IN')}` : '—'}
               </div>
               <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 3 }}>
-                {Number(upside) > 0 ? '+' : ''}{upside}% · {activeStock.days}-day horizon
+                {upside !== '—' ? `${Number(upside) > 0 ? '+' : ''}${upside}% · ${activeStock.days}-day horizon` : 'Awaiting data'}
               </div>
             </div>
           </div>
 
           <div className="ai-explain">
             <strong>AI Reasoning Engine — {activeStock.sym.split('.')[0]} · {market.flag} {market.name}</strong>
-            {market.aiExplains[activeStock.sym] || 'Analyzing sentiment signals across news and social media...'}
+            {market.aiExplains[activeStock.sym] || 'Analyzing market signals, news sentiment, and technical indicators for this stock...'}
           </div>
 
-          {/* Map Section (mini) */}
+          {/* Map Section */}
           <div className="map-section">
             <div className="map-hdr">
               <span>Global Market Impact Map</span>
               {(['all', 'high', 'tech', 'energy', '24h', '7d'] as const).map(f => (
-                <button
-                  key={f}
-                  className={`filter-btn${activeFilter === f ? ' active' : ''}`}
-                  onClick={() => setActiveFilter(f)}
-                >
+                <button key={f} className={`filter-btn${activeFilter === f ? ' active' : ''}`} onClick={() => setActiveFilter(f)}>
                   {f === 'all' ? 'All' : f === 'high' ? 'High Signal' : f === 'tech' ? 'Tech' : f === 'energy' ? 'Energy' : f}
                 </button>
               ))}
@@ -339,7 +403,7 @@ export default function Terminal() {
             <WorldMap height={220} onCountryClick={handleCountryClick} />
           </div>
 
-          {/* Country Panel (mini) */}
+          {/* Country Panel */}
           {country && (
             <div className="country-panel visible" style={{ margin: '0 8px 8px' }}>
               <div className="cp-header">
@@ -356,10 +420,7 @@ export default function Terminal() {
                 <b style={{ color: '#5a7a94', fontSize: 9 }}>KEY HEADLINES</b><br />
                 {country.headlines.map((h, i) => <span key={i}>· {h}<br /></span>)}
               </div>
-              <div className="cp-ai">
-                <span style={{ color: '#5a7a94', fontSize: 9 }}>AI SUMMARY</span><br />
-                {country.ai}
-              </div>
+              <div className="cp-ai"><span style={{ color: '#5a7a94', fontSize: 9 }}>AI SUMMARY</span><br />{country.ai}</div>
             </div>
           )}
 
@@ -372,9 +433,7 @@ export default function Terminal() {
               return (
                 <div key={c.sym} className="corr-item">
                   <span className="corr-sym">{c.sym.split('.')[0]}</span>
-                  <div className="corr-bar-wrap">
-                    <div className="corr-bar" style={{ width: `${(abs * 100).toFixed(0)}%`, background: ccol }} />
-                  </div>
+                  <div className="corr-bar-wrap"><div className="corr-bar" style={{ width: `${(abs * 100).toFixed(0)}%`, background: ccol }} /></div>
                   <span className="corr-val" style={{ color: ccol }}>{c.score > 0 ? '+' : ''}{c.score.toFixed(2)}</span>
                   <span className="corr-mentions">{(c.mentions / 1000).toFixed(1)}K ments</span>
                 </div>
