@@ -423,7 +423,7 @@ export default function Terminal() {
             </div>
           </div>
 
-          <SparkChart stock={activeStock} />
+          <SparkChart stock={activeStock} currency={market.currency} />
 
           {/* AI Panel */}
           <div className="ai-panel-row">

@@ -6,9 +6,10 @@ Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryS
 
 interface SparkChartProps {
   stock: Stock;
+  currency?: string;
 }
 
-export default function SparkChart({ stock }: SparkChartProps) {
+export default function SparkChart({ stock, currency = '₹' }: SparkChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef = useRef<Chart | null>(null);
 
@@ -59,7 +60,7 @@ export default function SparkChart({ stock }: SparkChartProps) {
           tooltip: {
             mode: 'index',
             intersect: false,
-            callbacks: { label: (c) => `$${(c.raw as number).toFixed(2)}` },
+            callbacks: { label: (c) => `${currency}${(c.raw as number).toFixed(2)}` },
           },
         },
         scales: {
@@ -67,7 +68,7 @@ export default function SparkChart({ stock }: SparkChartProps) {
           y: {
             display: true,
             grid: { color: '#1e2d3d' },
-            ticks: { color: '#5a7a94', font: { size: 9 }, callback: (v) => '$' + Number(v).toFixed(0) },
+            ticks: { color: '#5a7a94', font: { size: 9 }, callback: (v) => currency + Number(v).toFixed(0) },
           },
         },
       },
@@ -77,7 +78,7 @@ export default function SparkChart({ stock }: SparkChartProps) {
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [stock]);
+  }, [stock, currency]);
 
   return (
     <div className="chart-wrap" style={{ height: 120 }}>

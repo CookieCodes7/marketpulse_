@@ -93,7 +93,12 @@ export default function StockPage() {
   const an = detail?.analysts;
   const sig = analysis?.signal ?? 'NEUTRAL';
   const sigCol = sig === 'BULLISH' ? 'var(--bull)' : sig === 'BEARISH' ? 'var(--bear)' : 'var(--neut)';
-  const currency = q?.currency ?? '$';
+  const CURRENCY_SYMBOLS: Record<string, string> = {
+    INR: '₹', USD: '$', JPY: '¥', CNY: '¥', HKD: 'HK$',
+    GBP: '£', EUR: '€', AUD: 'A$', CAD: 'CA$', SGD: 'S$',
+  };
+  const rawCurrency = q?.currency ?? 'USD';
+  const currency = CURRENCY_SYMBOLS[rawCurrency] ?? rawCurrency;
   const isUp = (q?.change ?? 0) >= 0;
   const totalAnalysts = (an?.strongBuy ?? 0) + (an?.buy ?? 0) + (an?.hold ?? 0) + (an?.sell ?? 0) + (an?.strongSell ?? 0);
   const buyCount = (an?.strongBuy ?? 0) + (an?.buy ?? 0);
