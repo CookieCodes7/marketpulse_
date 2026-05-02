@@ -8,6 +8,8 @@ import { Stock } from '../data';
 
 Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Filler, Tooltip);
 
+const CHART_HEIGHT = 140;
+
 type ChartMode = 'line' | 'candle';
 type Candle = { date: string; open: number; high: number; low: number; close: number; volume: number };
 
@@ -19,9 +21,11 @@ interface SparkChartProps {
 
 export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkChartProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // candleContainerRef is ALWAYS in the DOM — never conditionally rendered
   const candleContainerRef = useRef<HTMLDivElement>(null);
   const chartJsRef = useRef<Chart | null>(null);
   const lwChartRef = useRef<IChartApi | null>(null);
+  const rafRef = useRef<number | null>(null);
   const [mode, setMode] = useState<ChartMode>('line');
   const [candles, setCandles] = useState<Candle[]>([]);
   const [candleLoading, setCandleLoading] = useState(false);
@@ -44,7 +48,7 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
     if (mode === 'candle') fetchCandles();
   }, [mode, fetchCandles]);
 
-  // Chart.js intraday line (line mode)
+  // ── Chart.js intraday line (line mode) ─────────────────────────────────────
   useEffect(() => {
     if (mode !== 'line') return;
     if (!canvasRef.current) return;
@@ -105,77 +109,98 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
     return () => { chartJsRef.current?.destroy(); chartJsRef.current = null; };
   }, [stock, currency, mode, col]);
 
-  // lightweight-charts candlestick (candle mode)
+  // ── lightweight-charts candlestick (candle mode) ───────────────────────────
   useEffect(() => {
+    // Cancel any pending rAF from a previous run
+    if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+
     if (mode !== 'candle' || !candleContainerRef.current || candleLoading || candles.length === 0) return;
 
+    // Tear down existing chart first
     if (lwChartRef.current) { lwChartRef.current.remove(); lwChartRef.current = null; }
 
     const container = candleContainerRef.current;
 
-    const chart = createChart(container, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#5a7a94',
-        fontFamily: 'IBM Plex Mono, monospace',
-        fontSize: 8,
-      },
-      grid: { vertLines: { color: '#0f1922' }, horzLines: { color: '#1a2533' } },
-      crosshair: {
-        vertLine: { color: '#3a5a7488', labelBackgroundColor: '#0a1520' },
-        horzLine: { color: '#3a5a7488', labelBackgroundColor: '#0a1520' },
-      },
-      rightPriceScale: { borderColor: '#1a2533' },
-      timeScale: { borderColor: '#1a2533', visible: false, fixLeftEdge: true, fixRightEdge: true },
-      width: container.offsetWidth,
-      height: container.offsetHeight,
+    // Defer to next paint so the container has been laid out and has real pixel dimensions
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      if (!container) return;
+
+      // getBoundingClientRect is more reliable than offsetWidth when display recently changed
+      const width = Math.max(container.getBoundingClientRect().width || container.offsetWidth, 100);
+
+      const chart = createChart(container, {
+        layout: {
+          background: { type: ColorType.Solid, color: 'transparent' },
+          textColor: '#5a7a94',
+          fontFamily: 'IBM Plex Mono, monospace',
+          fontSize: 8,
+        },
+        grid: { vertLines: { color: '#0f1922' }, horzLines: { color: '#1a2533' } },
+        crosshair: {
+          vertLine: { color: '#3a5a7488', labelBackgroundColor: '#0a1520' },
+          horzLine: { color: '#3a5a7488', labelBackgroundColor: '#0a1520' },
+        },
+        rightPriceScale: { borderColor: '#1a2533' },
+        timeScale: { borderColor: '#1a2533', visible: false, fixLeftEdge: true, fixRightEdge: true },
+        // Use explicit pixel dimensions — never rely on offsetHeight which can be 0
+        width,
+        height: CHART_HEIGHT,
+      });
+
+      lwChartRef.current = chart;
+      const toTime = (d: string) => (new Date(d).getTime() / 1000) as UTCTimestamp;
+
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: '#00ff9c', downColor: '#ff4d4f',
+        borderUpColor: '#00ff9c', borderDownColor: '#ff4d4f',
+        wickUpColor: '#00ff9c', wickDownColor: '#ff4d4f',
+        priceScaleId: 'right',
+      });
+      candleSeries.setData(candles.map(c => ({
+        time: toTime(c.date),
+        open: c.open, high: c.high, low: c.low, close: c.close,
+      })));
+
+      const volSeries = chart.addSeries(HistogramSeries, {
+        color: '#2a3a4a',
+        priceFormat: { type: 'volume' },
+        priceScaleId: 'vol',
+      });
+      chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+      chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.02, bottom: 0.2 } });
+      volSeries.setData(candles.map(c => ({
+        time: toTime(c.date),
+        value: c.volume,
+        color: c.close >= c.open ? '#00ff9c22' : '#ff4d4f22',
+      })));
+
+      chart.timeScale().fitContent();
+
+      const ro = new ResizeObserver(() => {
+        if (!lwChartRef.current) return;
+        const w = Math.max(container.getBoundingClientRect().width || container.offsetWidth, 100);
+        lwChartRef.current.applyOptions({ width: w, height: CHART_HEIGHT });
+      });
+      ro.observe(container);
+
+      // Store disconnect so cleanup can call it
+      (chart as unknown as { _ro: ResizeObserver })._ro = ro;
     });
-
-    lwChartRef.current = chart;
-    const toTime = (d: string) => (new Date(d).getTime() / 1000) as UTCTimestamp;
-
-    const candleSeries = chart.addSeries(CandlestickSeries, {
-      upColor: '#00ff9c', downColor: '#ff4d4f',
-      borderUpColor: '#00ff9c', borderDownColor: '#ff4d4f',
-      wickUpColor: '#00ff9c', wickDownColor: '#ff4d4f',
-      priceScaleId: 'right',
-    });
-    candleSeries.setData(candles.map(c => ({
-      time: toTime(c.date),
-      open: c.open, high: c.high, low: c.low, close: c.close,
-    })));
-
-    const volSeries = chart.addSeries(HistogramSeries, {
-      color: '#2a3a4a',
-      priceFormat: { type: 'volume' },
-      priceScaleId: 'vol',
-    });
-    chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
-    chart.priceScale('right').applyOptions({ scaleMargins: { top: 0.02, bottom: 0.2 } });
-    volSeries.setData(candles.map(c => ({
-      time: toTime(c.date),
-      value: c.volume,
-      color: c.close >= c.open ? '#00ff9c22' : '#ff4d4f22',
-    })));
-
-    chart.timeScale().fitContent();
-
-    const ro = new ResizeObserver(() => {
-      if (container && lwChartRef.current) {
-        lwChartRef.current.applyOptions({ width: container.offsetWidth, height: container.offsetHeight });
-      }
-    });
-    ro.observe(container);
 
     return () => {
-      ro.disconnect();
-      lwChartRef.current?.remove();
-      lwChartRef.current = null;
+      if (rafRef.current !== null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+      if (lwChartRef.current) {
+        try { (lwChartRef.current as unknown as { _ro?: ResizeObserver })._ro?.disconnect(); } catch { /* */ }
+        lwChartRef.current.remove();
+        lwChartRef.current = null;
+      }
     };
   }, [candles, mode, candleLoading]);
 
   return (
-    <div className="chart-wrap" style={{ height: 140, position: 'relative' }}>
+    <div className="chart-wrap" style={{ height: CHART_HEIGHT, position: 'relative', overflow: 'hidden' }}>
+
       {/* Chart type toggle — top-right corner */}
       <div style={{
         position: 'absolute', top: 4, right: 4, zIndex: 10,
@@ -202,36 +227,44 @@ export default function SparkChart({ stock, currency = '₹', yahooSym }: SparkC
         >CANDLE</button>
       </div>
 
-      {/* Line mode — Chart.js canvas */}
+      {/* Line mode — Chart.js canvas, absolutely fills the wrap */}
       <canvas
         ref={canvasRef}
-        style={{ width: '100%', height: '100%', display: mode === 'line' ? 'block' : 'none' }}
+        style={{
+          position: 'absolute', inset: 0,
+          width: '100%', height: '100%',
+          display: mode === 'line' ? 'block' : 'none',
+        }}
       />
 
-      {/* Candle mode — lightweight-charts container */}
-      {mode === 'candle' && (
-        <>
-          <div
-            ref={candleContainerRef}
-            style={{ width: '100%', height: '100%', display: (candleLoading || candles.length === 0) ? 'none' : 'block' }}
-          />
-          {(candleLoading || (!candleLoading && candles.length === 0 && yahooSym)) && (
-            <div style={{
-              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--muted)', fontSize: 9, fontFamily: 'IBM Plex Mono',
-            }}>
-              {candleLoading ? 'Loading candles...' : 'No data available'}
-            </div>
-          )}
-          {!yahooSym && !candleLoading && (
-            <div style={{
-              position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--muted)', fontSize: 9, fontFamily: 'IBM Plex Mono',
-            }}>
-              Select a stock to view candles
-            </div>
-          )}
-        </>
+      {/* Candle container — ALWAYS in the DOM so layout dimensions are stable.
+          Visibility is toggled via display, never by conditional rendering. */}
+      <div
+        ref={candleContainerRef}
+        style={{
+          position: 'absolute', inset: 0,
+          display: mode === 'candle' && !candleLoading && candles.length > 0 ? 'block' : 'none',
+        }}
+      />
+
+      {/* Loading overlay */}
+      {mode === 'candle' && candleLoading && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--muted)', fontSize: 9, fontFamily: 'IBM Plex Mono', background: 'var(--bg)',
+        }}>
+          Loading candles...
+        </div>
+      )}
+
+      {/* No symbol fallback */}
+      {mode === 'candle' && !yahooSym && !candleLoading && (
+        <div style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--muted)', fontSize: 9, fontFamily: 'IBM Plex Mono',
+        }}>
+          Select a stock to view candles
+        </div>
       )}
     </div>
   );
