@@ -344,7 +344,7 @@ export default function Terminal() {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100svh', overflow: 'hidden' }}>
 
       {/* Ticker Bar */}
       <div id="ticker-bar">
@@ -379,7 +379,7 @@ export default function Terminal() {
         <Link href="/news" className="mp-nav-btn" style={{ color: '#a78bfa', background: '#a78bfa18', border: '2px solid #a78bfa55' }}>
           📰 News
         </Link>
-        <div style={{ fontSize: 12, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '6px 12px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
+        <div className="mp-market-badge" style={{ fontSize: 12, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '6px 12px', letterSpacing: 1, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
 

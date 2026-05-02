@@ -27,9 +27,12 @@ export default function MarketSwitcher({ activeMarket, onChange, liveIndices = {
       display: 'flex',
       alignItems: 'center',
       height: 44,
+      minHeight: 44,
       padding: '0 14px',
       gap: 6,
       flexShrink: 0,
+      overflowX: 'auto',
+      overflowY: 'hidden',
     }}>
       <span style={{ fontSize: 9, color: '#5a7a94', textTransform: 'uppercase', letterSpacing: 1, marginRight: 8, whiteSpace: 'nowrap' }}>
         Market
