@@ -589,13 +589,15 @@ export default function LandingPage() {
       <footer className="lp-footer-bar">
         <div className="lp-footer-left">
           <span className="lp-footer-bar-logo">MARKET<span style={{ color: '#3b9eff' }}>PULSE</span></span>
-          <span className="lp-footer-sep">·</span>
-          <span className="lp-footer-bar-sub">Built by Team Nexus, Jaipur</span>
         </div>
 
-        <div className="lp-footer-status">
-          <span className="lp-status-dot" />
-          ALL SYSTEMS OPERATIONAL
+        <div className="lp-footer-right">
+          <span className="lp-footer-bar-sub">Built by Team Nexus, Jaipur</span>
+          <span className="lp-footer-sep">·</span>
+          <div className="lp-footer-status">
+            <span className="lp-status-dot" />
+            ALL SYSTEMS OPERATIONAL
+          </div>
         </div>
       </footer>
 

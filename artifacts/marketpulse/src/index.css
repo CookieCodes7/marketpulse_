@@ -1512,6 +1512,12 @@ body {
 }
 .lp-footer-sep { color: var(--muted); }
 .lp-footer-bar-sub { color: var(--muted); letter-spacing: 0.3px; }
+.lp-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
 .lp-footer-links {
   display: flex;
   gap: 20px;
