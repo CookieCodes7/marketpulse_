@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'wouter';
 import SparkChart from '../components/SparkChart';
 import WorldMap from '../components/WorldMap';
 import Clock from '../components/Clock';
 import MarketSwitcher from '../components/MarketSwitcher';
 import { MARKETS, COUNTRY_DATA, Stock } from '../data';
+import { useRealTimeQuotes, QuoteResult } from '../hooks/useRealTimeQuotes';
 
 function getSignalColor(sig: string) {
   return sig === 'BULL' ? 'var(--bull)' : sig === 'BEAR' ? 'var(--bear)' : 'var(--neut)';
@@ -26,12 +27,28 @@ const MARKET_ACCENT: Record<string, string> = {
   JP: '#ff6b6b',
 };
 
+function fmtVol(v: number | null): string {
+  if (!v) return '—';
+  if (v >= 1e9) return (v / 1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return (v / 1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v / 1e3).toFixed(1) + 'K';
+  return String(v);
+}
+
+function fmtIdx(v: number | null): string {
+  if (v === null) return '—';
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 export default function Terminal() {
   const [activeMarket, setActiveMarket] = useState('IN');
   const [stocksByMarket, setStocksByMarket] = useState<Record<string, Stock[]>>(() =>
     Object.fromEntries(Object.entries(MARKETS).map(([id, m]) => [id, m.stocks.map(s => ({ ...s }))]))
   );
   const [activeIdxByMarket, setActiveIdxByMarket] = useState<Record<string, number>>({ IN: 0, US: 0, CN: 0, JP: 0 });
+  const [liveQuotes, setLiveQuotes] = useState<Record<string, QuoteResult>>({});
+  const [liveIndices, setLiveIndices] = useState<Record<string, QuoteResult>>({});
+  const [quoteStatus, setQuoteStatus] = useState<'loading' | 'live' | 'error'>('loading');
   const [selectedCountry, setSelectedCountry] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
@@ -41,26 +58,45 @@ export default function Terminal() {
   const activeStock = stocks[activeIdx];
   const accentCol = MARKET_ACCENT[activeMarket];
 
-  // Live price jitter for all markets
-  useEffect(() => {
-    const id = setInterval(() => {
+  // Real-time quote update handler
+  const handleQuoteUpdate = useCallback(
+    (stockMap: Record<string, QuoteResult>, indexMap: Record<string, QuoteResult>) => {
+      setLiveQuotes(stockMap);
+      setLiveIndices(indexMap);
+      setQuoteStatus('live');
+
+      // Merge real prices into stock state
       setStocksByMarket(prev => {
         const next: Record<string, Stock[]> = {};
-        for (const mId of Object.keys(prev)) {
-          next[mId] = prev[mId].map(s => {
-            const delta = s.price * (Math.random() - 0.499) * 0.002;
+        for (const [mId, mStocks] of Object.entries(prev)) {
+          next[mId] = mStocks.map(s => {
+            const q = stockMap[`${mId}:${s.sym}`];
+            if (!q || q.error || q.price === null) return s;
             return {
               ...s,
-              price: +(s.price + delta).toFixed(2),
-              chg: +(s.chg + delta * 0.1).toFixed(2),
-              chgP: +(s.chgP + delta * 0.01).toFixed(2),
+              price: q.price,
+              chg: q.change ?? s.chg,
+              chgP: q.changePercent ?? s.chgP,
+              vol: fmtVol(q.volume),
+              pe: q.trailingPE ? q.trailingPE.toFixed(1) : s.pe,
             };
           });
         }
         return next;
       });
-    }, 4000);
-    return () => clearInterval(id);
+    },
+    []
+  );
+
+  const refetch = useRealTimeQuotes(handleQuoteUpdate, 45000);
+
+  // Handle fetch errors after 10s of no data
+  const errorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    errorTimerRef.current = setTimeout(() => {
+      setQuoteStatus(s => s === 'loading' ? 'error' : s);
+    }, 12000);
+    return () => { if (errorTimerRef.current) clearTimeout(errorTimerRef.current); };
   }, []);
 
   const handleMarketChange = (id: string) => {
@@ -93,13 +129,20 @@ export default function Terminal() {
   const upside = ((activeStock.target - activeStock.price) / activeStock.price * 100).toFixed(1);
   const col = getSignalColor(activeStock.sig);
 
-  // Ticker items for active market
-  const tickerItems = [...stocks, ...market.indices.map(idx => ({
-    sym: idx.name.replace(/ /g, ''),
-    price: parseFloat(idx.val.replace(/,/g, '')),
-    chg: parseFloat(idx.chg.replace('+', '')),
-    chgP: parseFloat(idx.chgP.replace('+', '').replace('%', '')),
-  }))];
+  // Build live index rows for active market
+  const liveIdxRows = market.indices.map((idx, i) => {
+    const q = liveIndices[`${activeMarket}:${i}`];
+    if (!q || q.price === null) return idx;
+    const dir = (q.change ?? 0) >= 0 ? 1 : -1;
+    const chgSign = dir >= 0 ? '+' : '';
+    return {
+      ...idx,
+      val: fmtIdx(q.price),
+      chg: `${chgSign}${(q.change ?? 0).toFixed(2)}`,
+      chgP: `${chgSign}${(q.changePercent ?? 0).toFixed(2)}%`,
+      dir,
+    };
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
@@ -107,9 +150,9 @@ export default function Terminal() {
       {/* Ticker Bar */}
       <div id="ticker-bar">
         <div id="ticker-track">
-          {[...tickerItems, ...tickerItems].map((s, i) => (
+          {[...stocks, ...stocks].map((s, i) => (
             <span key={i} className="tick-item">
-              <span className="tick-sym">{s.sym}</span>
+              <span className="tick-sym">{s.sym.split('.')[0]}</span>
               <span className="tick-price">{s.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               <span className={s.chg >= 0 ? 'tick-chg-up' : 'tick-chg-dn'}>
                 {s.chg >= 0 ? '+' : ''}{Math.abs(s.chgP).toFixed(2)}%
@@ -120,7 +163,7 @@ export default function Terminal() {
       </div>
 
       {/* Market Switcher */}
-      <MarketSwitcher activeMarket={activeMarket} onChange={handleMarketChange} />
+      <MarketSwitcher activeMarket={activeMarket} onChange={handleMarketChange} liveIndices={liveIndices} />
 
       {/* Header */}
       <div className="mp-header">
@@ -135,21 +178,38 @@ export default function Terminal() {
           padding: '2px 8px',
           letterSpacing: 1,
           textTransform: 'uppercase',
+          whiteSpace: 'nowrap',
         }}>
           {market.flag} {market.name} · {market.exchange}
         </div>
-        <input className="mp-search" type="text" placeholder={`Search ${market.name} ticker / company...`} />
+        <input className="mp-search" type="text" placeholder={`Search ${market.name} ticker...`} />
         <div className="hdr-stat">
           <span className="lbl">{market.benchmarkLabel}</span>
-          <span className="val" style={{ color: accentCol }}>{market.benchmarkVal}</span>
+          <span className="val" style={{ color: accentCol }}>
+            {liveIdxRows[0]?.val || market.benchmarkVal}
+          </span>
         </div>
         <div className="hdr-stat">
           <span className="lbl">{market.vixLabel}</span>
           <span className="val" style={{ color: 'var(--neut)' }}>{market.vixVal}</span>
         </div>
         <div className="hdr-stat">
-          <span className="lbl">Session</span>
-          <span className="val"><span className="session-dot" style={{ background: accentCol }} />LIVE</span>
+          <span className="lbl">Data</span>
+          <span className="val">
+            {quoteStatus === 'loading' && <span style={{ color: 'var(--neut)' }}>◌ LOADING</span>}
+            {quoteStatus === 'live' && (
+              <span style={{ color: 'var(--bull)' }}>
+                <span className="session-dot" style={{ background: 'var(--bull)' }} />LIVE
+              </span>
+            )}
+            {quoteStatus === 'error' && (
+              <span
+                style={{ color: 'var(--bear)', cursor: 'pointer' }}
+                title="Click to retry"
+                onClick={() => { setQuoteStatus('loading'); refetch(); }}
+              >⚠ RETRY</span>
+            )}
+          </span>
         </div>
         <Clock />
       </div>
@@ -162,35 +222,43 @@ export default function Terminal() {
             {market.flag} Watchlist
             <button onClick={addTicker}>+ ADD</button>
           </div>
-          {stocks.map((s, i) => (
-            <div
-              key={s.sym}
-              className={`watch-item${i === activeIdx ? ' active' : ''}`}
-              style={i === activeIdx ? { borderLeftColor: accentCol } : undefined}
-              onClick={() => setActiveIdxByMarket(prev => ({ ...prev, [activeMarket]: i }))}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="w-sym" style={{ color: i === activeIdx ? accentCol : '#7fb3d3' }}>{s.sym}</span>
-                <span className={s.chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 12, fontWeight: 500 }}>
-                  {market.currency}{s.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
+          {stocks.map((s, i) => {
+            const q = liveQuotes[`${activeMarket}:${s.sym}`];
+            const price = q?.price ?? s.price;
+            const chgP = q?.changePercent ?? s.chgP;
+            const chg = q?.change ?? s.chg;
+            return (
+              <div
+                key={s.sym}
+                className={`watch-item${i === activeIdx ? ' active' : ''}`}
+                style={i === activeIdx ? { borderLeftColor: accentCol } : undefined}
+                onClick={() => setActiveIdxByMarket(prev => ({ ...prev, [activeMarket]: i }))}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span className="w-sym" style={{ color: i === activeIdx ? accentCol : '#7fb3d3' }}>
+                    {s.sym.split('.')[0]}
+                  </span>
+                  <span className={chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 12, fontWeight: 500 }}>
+                    {market.currency}{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
+                  <span className="w-name">{s.name.substring(0, 14)}</span>
+                  <span className={chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 10 }}>
+                    {chg >= 0 ? '+' : ''}{chgP.toFixed(2)}%
+                  </span>
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
-                <span className="w-name">{s.name.substring(0, 14)}</span>
-                <span className={s.chg >= 0 ? 'bull' : 'bear'} style={{ fontSize: 10 }}>
-                  {s.chg >= 0 ? '+' : ''}{s.chgP.toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* CENTER */}
         <div className="mp-center">
           {/* Indices */}
           <div className="indices-row">
-            {market.indices.map(idx => (
-              <div key={idx.name} className="idx-card" style={{ borderTopColor: idx.dir >= 0 ? 'var(--bull)' : 'var(--bear)', borderTop: `2px solid ${idx.dir >= 0 ? 'var(--bull)' : 'var(--bear)'}` }}>
+            {liveIdxRows.map(idx => (
+              <div key={idx.name} className="idx-card" style={{ borderTop: `2px solid ${idx.dir >= 0 ? 'var(--bull)' : 'var(--bear)'}` }}>
                 <div className="idx-name">{idx.name}</div>
                 <div className={`idx-val ${idx.dir >= 0 ? 'bull' : 'bear'}`}>{idx.val}</div>
                 <div className={`idx-chg ${idx.dir >= 0 ? 'bull' : 'bear'}`}>{idx.chg} ({idx.chgP})</div>
@@ -200,13 +268,18 @@ export default function Terminal() {
 
           {/* Stock Detail */}
           <div className="stock-detail-row">
-            <div className="stock-info" style={{ borderLeftColor: accentCol, borderLeft: `2px solid ${accentCol}` }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                <span className="stock-sym" style={{ color: accentCol }}>{activeStock.sym}</span>
+            <div className="stock-info" style={{ borderLeft: `2px solid ${accentCol}` }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
+                <span className="stock-sym" style={{ color: accentCol }}>{activeStock.sym.split('.')[0]}</span>
                 <span className="stock-name">{activeStock.name}</span>
                 <span style={{ fontSize: 8, color: '#5a7a94', background: accentCol + '18', padding: '1px 6px', border: `1px solid ${accentCol}33` }}>
                   {market.exchange}
                 </span>
+                {quoteStatus === 'live' && (
+                  <span style={{ fontSize: 8, color: 'var(--bull)', background: '#00ff9c11', padding: '1px 6px', border: '1px solid #00ff9c33' }}>
+                    ● LIVE DATA
+                  </span>
+                )}
               </div>
               <div className={`stock-price ${activeStock.chg >= 0 ? 'bull' : 'bear'}`}>
                 {market.currency}{activeStock.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -244,7 +317,7 @@ export default function Terminal() {
           </div>
 
           <div className="ai-explain">
-            <strong>AI Reasoning Engine — {activeStock.sym} · {market.flag} {market.name}</strong>
+            <strong>AI Reasoning Engine — {activeStock.sym.split('.')[0]} · {market.flag} {market.name}</strong>
             {market.aiExplains[activeStock.sym] || 'Analyzing sentiment signals across news and social media...'}
           </div>
 

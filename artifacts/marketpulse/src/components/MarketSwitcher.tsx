@@ -1,8 +1,10 @@
 import { MARKET_ORDER, MARKETS } from '../data';
+import { QuoteResult } from '../hooks/useRealTimeQuotes';
 
 interface MarketSwitcherProps {
   activeMarket: string;
   onChange: (id: string) => void;
+  liveIndices?: Record<string, QuoteResult>;
 }
 
 const MARKET_COLORS: Record<string, string> = {
@@ -12,7 +14,12 @@ const MARKET_COLORS: Record<string, string> = {
   JP: '#ff6b6b',
 };
 
-export default function MarketSwitcher({ activeMarket, onChange }: MarketSwitcherProps) {
+function fmtIdx(v: number | null | undefined, fallback: string): string {
+  if (v == null) return fallback;
+  return v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export default function MarketSwitcher({ activeMarket, onChange, liveIndices = {} }: MarketSwitcherProps) {
   return (
     <div style={{
       background: '#090d11',
@@ -28,7 +35,7 @@ export default function MarketSwitcher({ activeMarket, onChange }: MarketSwitche
         Market
       </span>
 
-      <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+      <div style={{ display: 'flex', gap: 4 }}>
         {MARKET_ORDER.map(id => {
           const m = MARKETS[id];
           const isActive = activeMarket === id;
@@ -80,19 +87,29 @@ export default function MarketSwitcher({ activeMarket, onChange }: MarketSwitche
         })}
       </div>
 
+      {/* Live benchmark row — right side */}
       <div style={{ display: 'flex', gap: 16, marginLeft: 'auto', alignItems: 'center' }}>
         {MARKET_ORDER.map(id => {
           const m = MARKETS[id];
-          const idx = m.indices[0];
-          const isUp = idx.dir >= 0;
+          const liveQ = liveIndices[`${id}:0`];
+          const chgP = liveQ?.changePercent ?? null;
+          const isUp = chgP !== null ? chgP >= 0 : m.indices[0].dir >= 0;
+          const val = fmtIdx(liveQ?.price, m.indices[0].val);
+          const pct = chgP !== null
+            ? `${chgP >= 0 ? '+' : ''}${chgP.toFixed(2)}%`
+            : m.indices[0].chgP;
           const accentCol = MARKET_COLORS[id];
           return (
-            <div key={id} style={{ textAlign: 'right', opacity: activeMarket === id ? 1 : 0.45, transition: 'opacity .2s' }}>
+            <div
+              key={id}
+              style={{ textAlign: 'right', opacity: activeMarket === id ? 1 : 0.5, transition: 'opacity .2s', cursor: 'pointer' }}
+              onClick={() => onChange(id)}
+            >
               <div style={{ fontSize: 8, color: accentCol, textTransform: 'uppercase', letterSpacing: 1 }}>
                 {m.flag} {m.benchmarkLabel}
               </div>
               <div style={{ fontSize: 11, fontWeight: 600, color: isUp ? 'var(--bull)' : 'var(--bear)' }}>
-                {idx.val} <span style={{ fontSize: 9 }}>{idx.chgP}</span>
+                {val} <span style={{ fontSize: 9, fontWeight: 400 }}>{pct}</span>
               </div>
             </div>
           );
