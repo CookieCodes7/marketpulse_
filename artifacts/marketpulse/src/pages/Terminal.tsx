@@ -347,6 +347,14 @@ export default function Terminal() {
                 {quoteStatus === 'live' && activeStock.price > 0 && (
                   <span style={{ fontSize: 8, color: 'var(--bull)', background: '#00ff9c11', padding: '1px 6px', border: '1px solid #00ff9c33' }}>● LIVE</span>
                 )}
+                {watchlistSymbols[activeMarket]?.[activeStock.sym] && (
+                  <Link
+                    href={`/stock/${encodeURIComponent(watchlistSymbols[activeMarket][activeStock.sym])}`}
+                    style={{ marginLeft: 'auto', fontSize: 8, color: accentCol, background: accentCol + '18', border: `1px solid ${accentCol}44`, padding: '2px 8px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0 }}
+                  >
+                    ⊞ Full Screen
+                  </Link>
+                )}
               </div>
               <div className={`stock-price ${activeStock.chg >= 0 ? 'bull' : 'bear'}`}>
                 {activeStock.price > 0

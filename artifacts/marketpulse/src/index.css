@@ -183,3 +183,25 @@ body {
 .mcp-headline:last-child { border-bottom: none; }
 .mcp-ai-text { font-size: 10px; color: #9ab5c8; line-height: 1.7; }
 .map-tooltip { position: absolute; background: #0b1520; border: 1px solid var(--bull); padding: 6px 10px; font-size: 9px; color: var(--text); pointer-events: none; z-index: 100; font-family: 'IBM Plex Mono', monospace; max-width: 180px; line-height: 1.6; border-radius: 2px; }
+
+/* ── STOCK PAGE ── */
+.sp-page { display: flex; flex-direction: column; height: 100vh; overflow: hidden; background: var(--bg); }
+.sp-header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 6px 14px; display: flex; align-items: center; gap: 10px; height: 50px; flex-shrink: 0; }
+.sp-back { background: none; border: 1px solid var(--border); color: var(--bull); font-size: 9px; padding: 3px 10px; cursor: pointer; font-family: var(--font); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.sp-back:hover { background: var(--dim); }
+.sp-hdr-divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.sp-sym { font-size: 16px; font-weight: 600; color: var(--info); }
+.sp-body { display: grid; grid-template-columns: 200px 1fr 200px; height: calc(100vh - 50px); overflow: hidden; }
+.sp-left { background: var(--bg2); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+.sp-center { background: var(--bg); overflow-y: auto; display: flex; flex-direction: column; }
+.sp-right { background: var(--bg2); border-left: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+.sp-metrics { display: flex; flex-direction: column; }
+.sp-metric-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 10px; border-bottom: 1px solid var(--border); }
+.sp-metric-lbl { font-size: 9px; color: var(--muted); }
+.sp-metric-val { font-size: 10px; font-weight: 500; color: var(--text); text-align: right; }
+.sp-news-item { display: block; padding: 8px 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background .15s; text-decoration: none; }
+.sp-news-item:hover { background: var(--bg3); }
+.sp-news-src { font-size: 9px; display: flex; justify-content: space-between; margin-bottom: 3px; }
+.sp-news-title { font-size: 10px; color: var(--text); line-height: 1.4; font-family: var(--sans); }
+.sp-spinner { width: 14px; height: 14px; border: 2px solid var(--dim); border-top-color: var(--bull); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }

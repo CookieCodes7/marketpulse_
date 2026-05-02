@@ -1,18 +1,7 @@
 import { Router } from "express";
+import { getYF } from "../lib/yf";
 
 const router = Router();
-
-// yahoo-finance2 v3: default export is a class, must be instantiated
-// Using dynamic import to avoid esbuild ESM/CJS resolution issues
-let yf: { quote: (sym: string, opts: object, extra: object) => Promise<unknown> } | null = null;
-async function getYF() {
-  if (yf) return yf;
-  const mod = await import("yahoo-finance2");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const YF = (mod.default ?? mod) as any;
-  yf = typeof YF === "function" ? new YF() : YF;
-  return yf!;
-}
 
 router.get("/quotes", async (req, res) => {
   const raw = req.query.symbols as string;
@@ -28,10 +17,10 @@ router.get("/quotes", async (req, res) => {
   }
 
   try {
-    const client = await getYF();
+    const yf = await getYF();
     const results = await Promise.allSettled(
       symbols.map((sym) =>
-        client.quote(sym, {}, { validateResult: false }).catch(() => null)
+        yf.quote(sym, {}, { validateResult: false }).catch(() => null)
       )
     );
 
