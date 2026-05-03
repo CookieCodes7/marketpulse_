@@ -67,15 +67,7 @@ It combines live stock data, AI-powered signals, portfolio analytics, market new
 - Brent
 - Heating Oil
 - Gasoline
-
-**Agriculture**
-- Corn
-- Wheat
-- Soybeans
-- Sugar
-- Coffee
-- Cotton
-
+- 
 ### World Map
 
 - Geopolitical risk overlay with color-coded market sentiment.
