@@ -99,7 +99,7 @@ router.get("/map/country", async (req, res) => {
     const [indicesSettled, newsSettled] = await Promise.all([
       Promise.allSettled(
         config.indices.map(sym =>
-          (yf.quote(sym, {} as object) as Promise<Record<string, unknown>>).then(q => ({
+          (yf.quote(sym) as Promise<Record<string, unknown>>).then(q => ({
             sym,
             label: config.indexLabels[sym] ?? sym,
             price: (q.regularMarketPrice as number) ?? 0,
